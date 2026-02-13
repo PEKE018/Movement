@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+    <!-- Font Awesome para iconos médicos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Sistema de reservas online para profesionales de la salud. Agendá tu turno de forma rápida y sencilla con Movement." />
+  <meta name="keywords" content="turnos, reservas, salud, profesionales, médicos, citas, agenda online" />
+  <meta name="author" content="Movement" />
+  <meta name="robots" content="index, follow" />
+  
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Movement - Sistema de Reservas Online" />
+  <meta property="og:description" content="Agendá tu turno de forma rápida y sencilla con profesionales de la salud." />
+  <meta property="og:image" content="assets/logomov2.png" />
+  <meta property="og:locale" content="es_AR" />
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Movement - Sistema de Reservas" />
+  <meta name="twitter:description" content="Sistema de turnos online para profesionales de la salud" />
+  
+  <!-- PWA y Mobile -->
+  <meta name="theme-color" content="#9acacc" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Movement" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="format-detection" content="telephone=no" />
+  
+  <!-- Seguridad -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  
+  <title>Movement Reservas - Sistema de Turnos Online</title>
+  
+  <!-- Estilos -->
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="icon" type="image/png" href="assets/logomov2.png" />
+  <link rel="apple-touch-icon" href="assets/logomov2.png" />
+  <link rel="manifest" href="manifest.json" />
+  
+  <!-- Preconnect para optimización -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Firebase imports - PRIMERO -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { 
+      getFirestore, 
+      collection, 
+      addDoc, 
+      getDocs, 
+      getDoc,
+      doc,
+      setDoc,
+      updateDoc,
+      deleteDoc,
+      query, 
+      where, 
+      orderBy,
+      Timestamp 
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC7E_fFYBdyIMfiqU_97Hh85RQibo-NxtU",
+      authDomain: "movement-8f36b.firebaseapp.com",
+      projectId: "movement-8f36b",
+      storageBucket: "movement-8f36b.firebasestorage.app",
+      messagingSenderId: "1072753898129",
+      appId: "1:1072753898129:web:583c735a6b406a54970530"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Hacer disponible globalmente - TODAS las funciones necesarias
+    window.firebase = { 
+      db, 
+      collection, 
+      addDoc, 
+      getDocs,
+      getDoc,
+      doc,
+      setDoc,
+      updateDoc,
+      deleteDoc,
+      query, 
+      where,
+      Timestamp, 
+      orderBy
+    };
+    
+    // Solo log en desarrollo
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      console.log('✅ Firebase inicializado correctamente');
+    }
+  </script>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div class="header-left">
+        <div class="logo-header">
+          <img src="assets/logomov2.png" alt="Movement Logo" />
+        </div>
+        <div class="header-text">
+          <h1>Reservas Online</h1>
+          <p>Seleccioná tu profesional y agendá tu turno</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="btn-header-icon" onclick="abrirModalContacto()" aria-label="Contacto">
+          <i data-lucide="message-circle"></i>
+          <span>Contacto</span>
+        </button>
+        <button class="btn-header-icon btn-cancelar" onclick="abrirModalCancelar()" aria-label="Cancelar turno">
+          <i data-lucide="calendar-x-2"></i>
+          <span>Cancelar turno</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Modal de Contacto -->
+  <div id="modal-contacto" class="modal oculto" role="dialog" aria-modal="true">
+    <div class="modal-contenido modal-contacto-contenido">
+      <button id="cerrar-modal-contacto" class="cerrar" aria-label="Cerrar modal" onclick="cerrarModalContacto()">&times;</button>
+      
+      <div class="modal-scroll">
+        <div class="modal-header modal-header-contacto">
+          <div class="icon-contacto">
+            <i data-lucide="headphones" aria-hidden="true"></i>
+          </div>
+          <h2>Contactanos</h2>
+          <p>Elegí el medio que prefieras</p>
+        </div>
+        
+        <div class="contacto-opciones">
+          <a href="https://wa.me/5435376560017" target="_blank" class="contacto-opcion whatsapp">
+            <div class="contacto-icono">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+            </div>
+            <div class="contacto-info">
+              <strong>WhatsApp</strong>
+              <span>3537 65-6017</span>
+            </div>
+            <i data-lucide="chevron-right" class="contacto-arrow"></i>
+          </a>
+          
+          <a href="https://www.instagram.com/movement.salud/" target="_blank" class="contacto-opcion instagram">
+            <div class="contacto-icono">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+            </div>
+            <div class="contacto-info">
+              <strong>Instagram</strong>
+              <span>@movement.salud</span>
+            </div>
+            <i data-lucide="chevron-right" class="contacto-arrow"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <!-- Loading inicial -->
+    <div id="loading-inicial" class="loading-container" style="
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 350px;
+      background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+      border-radius: 24px;
+      margin: 0 auto;
+      max-width: 500px;
+      box-shadow: 0 15px 50px rgba(154, 202, 204, 0.15), 0 5px 15px rgba(0,0,0,0.05);
+      border: 1px solid rgba(154, 202, 204, 0.1);
+    ">
+      <div style="text-align: center; color: var(--azul); padding: 2rem;">
+        <div style="
+          width: 60px;
+          height: 60px;
+          border: 4px solid rgba(154, 202, 204, 0.2);
+          border-top: 4px solid var(--azul);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 1.5rem;
+        "></div>
+        <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Cargando profesionales...</p>
+        <p style="font-size: 0.9rem; color: #6b7280; font-weight: 400;">Esto tomará un momento</p>
+      </div>
+    </div>
+
+    <!-- Buscador -->
+    <div class="search-container" style="display: none;">
+      <div class="search-wrapper">
+        <section class="buscador">
+          <input 
+            type="text" 
+            id="buscar" 
+            placeholder="Buscar por nombre o especialidad..."
+            aria-label="Buscar profesionales"
+            autocomplete="off"
+          />
+          <i data-lucide="search" class="search-icon" aria-hidden="true"></i>
+        </section>
+      </div>
+    </div>
+
+    <!-- Lista de Profesionales -->
+    <section 
+      id="lista-profesionales" 
+      class="profesionales"
+      role="list"
+      aria-label="Lista de profesionales disponibles"
+    >
+      <!-- Los profesionales se cargan dinámicamente -->
+    </section>
+
+    <!-- Error state -->
+    <div id="error-container" style="display: none; text-align: center; padding: 3rem; background: white; border-radius: 20px; margin: 2rem; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);">
+      <i data-lucide="wifi-off" style="width: 60px; height: 60px; color: var(--error); margin-bottom: 1rem;"></i>
+      <h3 style="color: var(--texto); margin-bottom: 0.5rem;">Error de conexión</h3>
+      <p style="color: var(--texto-light); margin-bottom: 1.5rem;">No se pudieron cargar los profesionales</p>
+      <button onclick="location.reload()" class="btn">
+        <i data-lucide="refresh-cw"></i> Reintentar
+      </button>
+    </div>
+
+    <!-- Modal de Reserva -->
+    <div 
+      id="modal-turno" 
+      class="modal oculto" 
+      role="dialog" 
+      aria-modal="true"
+      aria-labelledby="nombre-profesional"
+    >
+      <div class="modal-contenido">
+        <button 
+          id="cerrar-modal" 
+          class="cerrar"
+          aria-label="Cerrar modal"
+        >&times;</button>
+
+        <div class="modal-scroll">
+
+          <!-- Header del Modal -->
+          <div class="modal-header">
+            <h2 id="nombre-profesional">Nombre del profesional</h2>
+            <p id="especialidad">Especialidad</p>
+            <button type="button" id="btn-whatsapp-profesional" class="btn-whatsapp-contacto" onclick="contactarProfesionalWhatsApp()" style="display: none;">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              <span>Contactar</span>
+            </button>
+          </div>
+
+          <!-- Fechas específicas para profesionales esporádicos -->
+          <div id="fechas-esporadico-container" class="fechas-esporadico-container" style="display: none;">
+            <label>
+              <i data-lucide="calendar-days" aria-hidden="true"></i> 
+              Fechas de atención disponibles
+            </label>
+            <div id="fechas-esporadico" class="fechas-esporadico-grid" role="radiogroup" aria-label="Seleccionar fecha de atención"></div>
+          </div>
+
+          <!-- Selector de Fecha (para profesionales periódicos) -->
+          <div id="fecha-container-normal" class="fecha-container">
+            <label for="fecha-turno">
+              <i data-lucide="calendar" aria-hidden="true"></i> 
+              Fecha del turno
+            </label>
+            <input 
+              type="date" 
+              id="fecha-turno" 
+              placeholder="dd/mm/aaaa"
+              required
+              aria-required="true"
+            />
+          </div>
+
+          <!-- Horarios Disponibles -->
+          <div>
+            <div class="seccion-titulo">
+              <i data-lucide="clock" aria-hidden="true"></i> 
+              Horarios disponibles
+            </div>
+            <div 
+              id="horarios-disponibles"
+              role="radiogroup"
+              aria-label="Seleccionar horario"
+            ></div>
+          </div>
+
+          <!-- Formulario de Datos -->
+          <form id="form-reserva" novalidate>
+            <h3>Completá tus datos</h3>
+            
+            <div class="input-icon">
+              <input 
+                type="text" 
+                id="nombre" 
+                placeholder="Nombre completo" 
+                required
+                aria-required="true"
+                minlength="3"
+                autocomplete="name"
+              />
+              <i data-lucide="user" aria-hidden="true"></i>
+            </div>
+            
+            <div class="input-icon">
+              <input 
+                type="tel" 
+                id="telefono" 
+                placeholder="Teléfono" 
+                required
+                aria-required="true"
+                pattern="[0-9]{10,15}"
+                autocomplete="tel"
+              />
+              <i data-lucide="phone" aria-hidden="true"></i>
+            </div>
+            
+            <div class="input-icon">
+              <input 
+                type="email" 
+                id="email" 
+                placeholder="Correo electrónico (opcional)"
+                autocomplete="email"
+              />
+              <i data-lucide="mail" aria-hidden="true"></i>
+            </div>
+            
+            <div class="input-icon">
+              <input 
+                type="text" 
+                id="documento" 
+                placeholder="Documento (DNI)"
+                required
+                aria-required="true"
+                minlength="7"
+                maxlength="15"
+                autocomplete="off"
+              />
+              <i data-lucide="id-card" aria-hidden="true"></i>
+            </div>
+            
+            <button type="submit" class="btn">
+              <i data-lucide="check" aria-hidden="true"></i> 
+              Confirmar turno
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Cancelación de Turno -->
+    <div 
+      id="modal-cancelar" 
+      class="modal oculto" 
+      role="dialog" 
+      aria-modal="true"
+      aria-labelledby="titulo-cancelar"
+    >
+      <div class="modal-contenido">
+        <button 
+          id="cerrar-modal-cancelar" 
+          class="cerrar"
+          aria-label="Cerrar modal"
+        >&times;</button>
+
+        <div class="modal-scroll">
+          <!-- Header del Modal -->
+          <div class="modal-header modal-header-cancelar">
+            <div class="icon-cancelar">
+              <i data-lucide="calendar-x-2" aria-hidden="true"></i>
+            </div>
+            <div class="titulo-con-info">
+              <h2 id="titulo-cancelar">Cancelar Turno</h2>
+              <button type="button" class="btn-info-cancelar" onclick="toggleInfoCancelacion()" aria-label="Información sobre cancelación">
+                <i data-lucide="info" aria-hidden="true"></i>
+              </button>
+            </div>
+            <p>Ingresá tu documento o teléfono para buscar tu turno</p>
+            
+            <!-- Tooltip de información -->
+            <div id="info-cancelacion" class="info-tooltip oculto">
+              <div class="info-tooltip-content">
+                <div class="info-tooltip-header">
+                  <i data-lucide="alert-circle" aria-hidden="true"></i>
+                  <strong>Política de cancelación</strong>
+                </div>
+                <ul>
+                  <li>Los turnos deben cancelarse con <strong>48 horas de anticipación</strong> como mínimo.</li>
+                  <li>En caso de <strong>no asistir</strong>, se deberá abonar como mínimo el 50% del valor del turno.</li>
+                  <li>En caso de emergencia, contactá a <strong>Sofi: 3537 65-6017</strong></li>
+                </ul>
+                <button type="button" class="btn-cerrar-info" onclick="toggleInfoCancelacion()">
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paso 1: Buscar turno -->
+          <div id="paso-buscar-turno">
+            <form id="form-buscar-turno" novalidate>
+              <div class="input-icon">
+                <input 
+                  type="text" 
+                  id="buscar-documento" 
+                  placeholder="Documento (DNI)" 
+                  minlength="7"
+                  maxlength="15"
+                  autocomplete="off"
+                />
+                <i data-lucide="id-card" aria-hidden="true"></i>
+              </div>
+              
+              <div class="separador-o">
+                <span>o</span>
+              </div>
+              
+              <div class="input-icon">
+                <input 
+                  type="tel" 
+                  id="buscar-telefono" 
+                  placeholder="Teléfono" 
+                  pattern="[0-9]{10,15}"
+                  autocomplete="tel"
+                />
+                <i data-lucide="phone" aria-hidden="true"></i>
+              </div>
+              
+              <button type="submit" class="btn btn-buscar">
+                <i data-lucide="search" aria-hidden="true"></i> 
+                Buscar mi turno
+              </button>
+            </form>
+            
+            <div id="resultado-busqueda"></div>
+          </div>
+
+          <!-- Paso 2: Confirmar cancelación -->
+          <div id="paso-confirmar-cancelar" style="display: none;">
+            <div class="turno-a-cancelar">
+              <div class="turno-info-card">
+                <div class="turno-detalle">
+                  <i data-lucide="user" aria-hidden="true"></i>
+                  <span id="cancelar-profesional">-</span>
+                </div>
+                <div class="turno-detalle">
+                  <i data-lucide="calendar" aria-hidden="true"></i>
+                  <span id="cancelar-fecha">-</span>
+                </div>
+                <div class="turno-detalle">
+                  <i data-lucide="clock" aria-hidden="true"></i>
+                  <span id="cancelar-hora">-</span>
+                </div>
+                <div class="turno-detalle">
+                  <i data-lucide="user-check" aria-hidden="true"></i>
+                  <span id="cancelar-cliente">-</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="advertencia-cancelar">
+              <i data-lucide="alert-triangle" aria-hidden="true"></i>
+              <p>¿Estás seguro de que querés cancelar este turno? Esta acción no se puede deshacer.</p>
+            </div>
+            
+            <div class="botones-cancelar">
+              <button type="button" class="btn btn-secundario" onclick="volverBusqueda()">
+                <i data-lucide="arrow-left" aria-hidden="true"></i> 
+                Volver
+              </button>
+              <button type="button" class="btn btn-cancelar-turno" id="btn-confirmar-cancelar">
+                <i data-lucide="x-circle" aria-hidden="true"></i> 
+                Confirmar cancelación
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Selección de Mensaje WhatsApp -->
+    <div id="modal-seleccion-mensaje" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="titulo-seleccion">
+      <div class="modal-contenido" style="max-width: 500px;">
+        <button class="cerrar" onclick="cerrarModalSeleccion()" aria-label="Cerrar modal">&times;</button>
+        <div class="modal-scroll" style="padding: 1.5rem;">
+          <div style="text-align: center; margin-bottom: 1.5rem;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+              <svg viewBox="0 0 24 24" fill="white" width="30" height="30">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+            </div>
+            <h2 id="titulo-seleccion" style="color: #333; margin-bottom: 0.5rem;">¿Qué mensaje querés enviar?</h2>
+            <p style="color: #666; font-size: 0.9rem;">Seleccioná una opción para contactar al profesional</p>
+          </div>
+          <div id="lista-mensajes-seleccion" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <!-- Los mensajes se cargan dinámicamente -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-content">
+      <div class="logo-footer" id="logo-footer-secret">
+        <img src="assets/logomov2.png" alt="Movement Logo">
+      </div>
+      <p>© 2026 Movement - Sistema de Reservas</p>
+    </div>
+  </footer>
+
+  <!-- Acceso secreto al admin: tocar logo 5 veces -->
+  <script>
+    (function() {
+      let clicks = 0;
+      let timeout;
+      const logo = document.getElementById('logo-footer-secret');
+      if (logo) {
+        logo.style.cursor = 'pointer';
+        logo.addEventListener('click', function() {
+          clicks++;
+          clearTimeout(timeout);
+          if (clicks >= 5) {
+            window.location.href = 'admin.html';
+            clicks = 0;
+          }
+          timeout = setTimeout(() => { clicks = 0; }, 2000);
+        });
+      }
+    })();
+  </script>
+
+  <!-- CSS para animación de carga -->
+  <style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading-container {
+      transition: opacity 0.3s ease;
+    }
+    
+    .fade-in {
+      opacity: 0;
+      animation: fadeInUp 0.6s ease forwards;
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+
+  <!-- Scripts con orden correcto y espera de Firebase -->
+  <script>
+    // Función para esperar a que Firebase esté disponible
+    function waitForFirebase() {
+      return new Promise((resolve) => {
+        const checkFirebase = () => {
+          if (window.firebase && window.firebase.db) {
+            resolve();
+          } else {
+            setTimeout(checkFirebase, 100);
+          }
+        };
+        checkFirebase();
+      });
+    }
+
+    // Detectar modo producción
+    const IS_PRODUCTION = !(location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+    
+    // Logger condicional
+    const log = IS_PRODUCTION ? () => {} : console.log.bind(console);
+    const logError = console.error.bind(console); // Errores siempre se muestran
+    
+    // Función de inicialización principal
+    async function initializeApp() {
+      try {
+        // Esperar a Firebase
+        await waitForFirebase();
+        log('✅ Firebase listo, cargando scripts...');
+        
+        // Cargar scripts de manera secuencial
+        await loadScript('js/error-handler.js');
+        await loadScript('js/security.js');
+        await loadScript('js/config.js');
+        await loadScript('js/utils.js');
+        await loadScript('js/data.js');
+        await loadScript('js/whatsapp.js');
+        await loadScript('js/app.js');
+        
+        log('✅ Todos los scripts cargados');
+        
+        // Inicializar Lucide
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+          log('✅ Iconos inicializados');
+        }
+        
+        // Inicializar DOM y datos
+        if (typeof inicializarDOM === 'function') {
+          inicializarDOM();
+          log('✅ DOM inicializado');
+        }
+        
+        // Configurar búsqueda
+        if (typeof configurarBusqueda === 'function') {
+          configurarBusqueda();
+          log('✅ Búsqueda configurada');
+        }
+        
+        // Configurar modal
+        if (typeof configurarModal === 'function') {
+          configurarModal();
+          log('✅ Modal configurado');
+        }
+        
+        // Configurar modal de cancelación
+        if (typeof inicializarModalCancelar === 'function') {
+          inicializarModalCancelar();
+          log('✅ Modal de cancelación configurado');
+        }
+        
+        // Configurar modal de contacto
+        if (typeof inicializarModalContacto === 'function') {
+          inicializarModalContacto();
+          log('✅ Modal de contacto configurado');
+        }
+        
+        // IMPORTANTE: Esperar a que los datos estén cargados y mostrar profesionales
+        // Esperar un momento para que inicializarDatos() termine
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Mostrar profesionales
+        if (typeof mostrarProfesionales === 'function') {
+          await mostrarProfesionales();
+          log('✅ Profesionales mostrados');
+        }
+        
+        // Ocultar loading y mostrar contenido
+        const loadingInicial = document.getElementById('loading-inicial');
+        const searchContainer = document.querySelector('.search-container');
+        const listaProfesionales = document.getElementById('lista-profesionales');
+        
+        if (loadingInicial) loadingInicial.style.display = 'none';
+        if (searchContainer) searchContainer.style.display = 'block';
+        if (listaProfesionales) listaProfesionales.style.display = 'grid';
+        
+        log('✅ App inicializada completamente');
+        
+      } catch (error) {
+        logError('❌ Error inicializando app:', error);
+        showError();
+      }
+    }
+
+    // Función para cargar scripts dinámicamente
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+
+    // Mostrar error si falla la carga
+    function showError() {
+      document.getElementById('loading-inicial').style.display = 'none';
+      document.getElementById('error-container').style.display = 'block';
+      
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    }
+
+    // Inicializar cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', initializeApp);
+  </script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+﻿Manual de Uso - Movement Reservas
+
+Sistema de Turnos Online para Profesionales de la Salud
+
+================================================================================
+
+INDICE
+
+1. Para Clientes
+   - Reservar un turno
+   - Cancelar un turno
+   - Contacto
+2. Para Administradores
+   - Acceder al panel de administracion
+   - Gestionar profesionales
+   - Configurar horarios
+   - Bloquear fechas
+   - Exportar datos
+3. Politicas de Cancelacion
+4. Preguntas Frecuentes
+5. Soporte Tecnico
+
+================================================================================
+
+PARA CLIENTES
+
+Reservar un turno
+
+1. Ingresa a la pagina web: movement-8f36b.web.app
+
+2. Selecciona un profesional: 
+   - Podes usar el buscador para filtrar por nombre o especialidad
+   - Hace click en Agendar turno en la tarjeta del profesional
+
+3. Elegi fecha y horario:
+   - Selecciona una fecha disponible en el calendario
+   - Elegi uno de los horarios disponibles (los ocupados no se muestran)
+
+4. Completa tus datos:
+   - Nombre completo
+   - Telefono (minimo 10 digitos)
+   - Email (opcional)
+   - Documento (DNI)
+
+5. Confirma el turno:
+   - Hace click en Confirmar turno
+   - Seras redirigido a WhatsApp para enviar la confirmacion al profesional
+
+--------------------------------------------------------------------------------
+
+Cancelar un turno
+
+1. Hace click en el boton de cancelacion (en la esquina superior derecha)
+
+2. Busca tu turno:
+   - Ingresa tu numero de documento (DNI), o
+   - Ingresa tu numero de telefono
+
+3. Selecciona el turno a cancelar:
+   - Se mostraran todos tus turnos activos
+   - Hace click en Cancelar en el turno correspondiente
+
+4. Confirma la cancelacion:
+   - Revisa los datos del turno
+   - Hace click en Confirmar cancelacion
+
+IMPORTANTE: Revisa las politicas de cancelacion antes de cancelar.
+
+--------------------------------------------------------------------------------
+
+Contacto
+
+Si necesitas comunicarte con nosotros:
+
+1. Hace click en el boton de contacto (en la esquina superior derecha)
+
+2. Elegi el medio de contacto:
+   - WhatsApp: 3537 65-6017 (Sofi)
+   - Instagram: @movementcardio
+
+================================================================================
+
+PARA ADMINISTRADORES
+
+Acceder al panel de administracion
+
+1. Metodo secreto: En la pagina principal, hace 5 clicks seguidos en el logo 
+   de Movement en el footer (parte inferior de la pagina)
+
+2. Ingresa tus credenciales:
+   - Email de administrador
+   - Contrasena
+
+3. Accedes al panel de administracion
+
+NOTA: Las credenciales son proporcionadas unicamente a administradores autorizados.
+
+--------------------------------------------------------------------------------
+
+Gestionar profesionales
+
+AGREGAR UN NUEVO PROFESIONAL
+
+1. En el panel de admin, hace click en Registrar Profesional
+
+2. Completa los datos basicos:
+   - Nombre: Nombre completo del profesional
+   - Especialidad: Ej: Kinesiologia, Nutricion, Traumatologia, etc.
+   - Telefono: Numero de WhatsApp (con codigo de area, ej: 3537656017)
+   - Duracion del turno: 15, 30, 45, 60 o 90 minutos
+   - Icono: Selecciona un icono medico representativo
+
+3. Selecciona el tipo de atencion:
+   - Periodico (horarios semanales): Para profesionales con horarios fijos 
+     que se repiten cada semana (ej: Lunes y Miercoles 9-12hs)
+   - Esporadico (turnos especificos): Para profesionales con guardias, 
+     turnos mensuales o fechas puntuales (ej: primer sabado de cada mes)
+
+4. Configura los horarios segun el tipo:
+   
+   SI ES PERIODICO:
+   - Selecciona los dias de atencion (Lunes a Domingo)
+   - Agrega los horarios para cada dia
+   - Podes usar la Asignacion Rapida para configurar varios dias a la vez
+   
+   SI ES ESPORADICO:
+   - Selecciona la fecha especifica
+   - Agrega los horarios disponibles para esa fecha
+   - Podes usar la Asignacion Rapida de Horarios para seleccionar 
+     multiples horarios
+   - Repeti para cada fecha que tenga turnos
+
+5. (Opcional) Configura dias no laborables (vacaciones, feriados)
+
+6. (Opcional) Personaliza el mensaje de WhatsApp
+
+7. Hace click en Guardar Profesional
+
+EDITAR UN PROFESIONAL
+
+1. Busca al profesional en la lista
+2. Hace click en el boton de editar
+3. Modifica los datos necesarios (podes cambiar entre tipo periodico/esporadico)
+4. Guarda los cambios
+
+CONFIGURAR HORARIOS DE ATENCION
+
+Para profesionales PERIODICOS (horarios semanales):
+
+1. En la seccion Horarios de atencion, veras los 7 dias de la semana
+
+2. Para cada dia que atiende el profesional:
+   - Marca el checkbox del dia
+   - Agrega los horarios individualmente o usa la Asignacion Rapida:
+     * Selecciona hora de inicio
+     * Selecciona hora de fin
+     * El sistema generara automaticamente todos los horarios segun la 
+       duracion del turno
+   - Ejemplo: Si el turno dura 30 min y configuras de 09:00 a 12:00, se 
+     crearan: 09:00, 09:30, 10:00, 10:30, 11:00, 11:30
+
+Para profesionales ESPORADICOS (turnos especificos):
+
+1. En la seccion Turnos en fechas especificas, ingresa la fecha exacta 
+   (formato: DD/MM/AAAA)
+
+2. Agrega los horarios disponibles para esa fecha:
+   - Ingresa cada horario manualmente en formato HH:MM (ej: 08:00, 09:00, etc.)
+   - O usa la Asignacion Rapida de Horarios:
+     * Ingresa la hora de inicio
+     * Ingresa la hora de fin
+     * El sistema generara todos los horarios intermedios segun la duracion 
+       del turno
+   - Podes usar la Seleccion Rapida para marcar multiples horarios a la vez
+
+3. Repeti el proceso para cada fecha que tenga turnos disponibles
+
+NOTA IMPORTANTE: Los profesionales esporadicos solo apareceran en el listado 
+publico cuando tengan al menos un turno configurado para una fecha especifica.
+
+ELIMINAR UN PROFESIONAL
+
+1. Hace click en el boton de eliminar
+2. Confirma la eliminacion
+
+ADVERTENCIA: Al eliminar un profesional, sus turnos reservados no se eliminan 
+automaticamente.
+
+--------------------------------------------------------------------------------
+
+Bloquear fechas especificas (dias no laborables)
+
+Para bloquear dias especificos (vacaciones, feriados, etc.):
+
+1. Edita el profesional
+2. En el campo Dias no laborables, agrega las fechas en formato YYYY-MM-DD
+3. Ejemplo: 2026-01-20, 2026-02-15, 2026-03-24
+
+Las fechas bloqueadas no mostraran horarios disponibles para los clientes.
+
+--------------------------------------------------------------------------------
+
+Exportar datos
+
+Desde el panel de administracion podes exportar a Excel:
+
+1. Hace click en Exportar
+2. Elegi que datos exportar:
+   - Profesionales: Lista completa con horarios, tipo de profesional y turnos
+   - Clientes: Registro de clientes
+   - Turnos: Historial de reservas
+
+================================================================================
+
+POLITICAS DE CANCELACION
+
+Reglas importantes:
+
+1. Anticipacion minima: Los turnos deben cancelarse con 48 horas de anticipacion.
+
+2. Inasistencia: En caso de no asistir al turno sin previo aviso, se debera 
+   abonar como minimo el 50% del valor del turno.
+
+3. Emergencias: En caso de emergencia, contactar a Sofi: 3537 65-6017
+
+================================================================================
+
+PREGUNTAS FRECUENTES
+
+Puedo reservar mas de un turno?
+Si, podes reservar multiples turnos con el mismo documento.
+
+Que pasa si el profesional cancela mi turno?
+El profesional te contactara por WhatsApp para reprogramar.
+
+Puedo modificar un turno existente?
+Por el momento, debes cancelar el turno actual y reservar uno nuevo.
+
+Hasta con cuanta anticipacion puedo reservar?
+Podes reservar turnos para cualquier fecha futura donde el profesional tenga 
+disponibilidad.
+
+Que es un profesional periodico?
+Es un profesional que atiende con horarios fijos semanales (ej: todos los lunes 
+y miercoles de 9 a 12hs). Los horarios se repiten automaticamente cada semana.
+
+Que es un profesional esporadico?
+Es un profesional que hace guardias, turnos mensuales o tiene fechas de atencion 
+puntuales (ej: primer sabado de cada mes, o dias especificos). Solo aparecera 
+en la lista cuando tenga turnos configurados para fechas especificas.
+
+Por que no veo algunos profesionales en la lista?
+Los profesionales esporadicos solo aparecen cuando tienen turnos configurados 
+para fechas futuras. Los profesionales periodicos siempre estan visibles.
+
+Por que no veo horarios disponibles?
+Puede ser porque:
+- El profesional no atiende ese dia de la semana
+- Todos los horarios ya estan reservados
+- La fecha esta bloqueada
+
+================================================================================
+
+SOPORTE TECNICO
+
+Si tenes problemas tecnicos con la plataforma:
+
+- WhatsApp: 3537 65-6017 (Sofi)
+- Instagram: @movementcardio
+
+================================================================================
+
+INFORMACION DE LA APP
+
+- URL: movement-8f36b.web.app
+- Version: 1.0
+- Ultima actualizacion: Enero 2026
+
+================================================================================
+
+Copyright 2026 Movement - Sistema de Reservas Online
+

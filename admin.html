@@ -1,0 +1,5132 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+    <!-- Font Awesome para iconos médicos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  
+  <!-- SEO y Seguridad -->
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="description" content="Panel de administración - Movement" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  
+  <!-- PWA -->
+  <meta name="theme-color" content="#89CDD3" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  
+  <title>Panel de Administración - Movement</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="icon" type="image/png" href="assets/logomov2.png" />
+  <link rel="apple-touch-icon" href="assets/logomov2.png" />
+  
+  <!-- Preconnect -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SheetJS para exportar a Excel -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  
+  <!-- Detectar modo producción (global) -->
+  <script>
+    var IS_PROD = !(location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+  </script>
+  
+  <!-- Firebase imports -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC7E_fFYBdyIMfiqU_97Hh85RQibo-NxtU",
+      authDomain: "movement-8f36b.firebaseapp.com",
+      projectId: "movement-8f36b",
+      storageBucket: "movement-8f36b.firebasestorage.app",
+      messagingSenderId: "1072753898129",
+      appId: "1:1072753898129:web:583c735a6b406a54970530"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    window.firebaseAdmin = { 
+      db, 
+      auth, 
+      collection, 
+      addDoc, 
+      getDocs, 
+      updateDoc, 
+      deleteDoc, 
+      doc, 
+      query,
+      where,
+      signInWithEmailAndPassword, 
+      signOut, 
+      onAuthStateChanged,
+      createUserWithEmailAndPassword
+    };
+    
+    // Solo log en desarrollo
+    if (!IS_PROD) console.log('✅ Firebase Admin inicializado');
+  </script>
+  
+  <style>
+    /* ========== VARIABLES Y RESET ========== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    /* ========== ESTILOS MODAL EXPORTACIÓN MEJORADO ========== */
+    .modal-exportar-mejorado {
+      max-width: 750px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      border-radius: 20px;
+    }
+    
+    .modal-header-exportar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.5rem 2rem;
+      background: linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%);
+      color: white;
+      border-radius: 20px 20px 0 0;
+      position: relative;
+    }
+    
+    .modal-header-exportar .modal-header-icon {
+      width: 50px;
+      height: 50px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-header-exportar .modal-header-icon i {
+      width: 28px;
+      height: 28px;
+    }
+    
+    .modal-header-exportar .modal-header-text h2 {
+      font-size: 1.4rem;
+      margin: 0;
+    }
+    
+    .modal-header-exportar .modal-header-text p {
+      font-size: 0.9rem;
+      opacity: 0.9;
+      margin: 0;
+    }
+    
+    .modal-header-exportar .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    
+    .modal-header-exportar .modal-close:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    /* Panel de Filtros */
+    .export-panel-filtros {
+      padding: 1.5rem;
+      background: #f8fafc;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .filtros-titulo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      color: #374151;
+      font-weight: 600;
+    }
+    
+    .filtros-titulo i {
+      width: 18px;
+      height: 18px;
+      color: #6FB3B8;
+    }
+    
+    .btn-limpiar-filtros {
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid #d1d5db;
+      color: #6b7280;
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: all 0.2s;
+    }
+    
+    .btn-limpiar-filtros:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    
+    .btn-limpiar-filtros i {
+      width: 14px;
+      height: 14px;
+    }
+    
+    .filtros-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .filtro-grupo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    
+    .filtro-grupo label {
+      font-size: 0.8rem;
+      color: #6b7280;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    
+    .filtro-grupo label i {
+      width: 14px;
+      height: 14px;
+    }
+    
+    .filtro-grupo select,
+    .filtro-grupo input[type="date"] {
+      padding: 0.6rem 0.8rem;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      background: white;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    .filtro-grupo select:focus,
+    .filtro-grupo input[type="date"]:focus {
+      border-color: #89CDD3;
+      box-shadow: 0 0 0 3px rgba(137, 205, 211, 0.15);
+      outline: none;
+    }
+    
+    /* Filtros rápidos */
+    .filtros-rapidos {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      padding-top: 0.75rem;
+      border-top: 1px dashed #e5e7eb;
+    }
+    
+    .filtros-rapidos span {
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+    
+    .filtros-rapidos button {
+      background: white;
+      border: 1px solid #e5e7eb;
+      color: #374151;
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .filtros-rapidos button:hover {
+      background: #89CDD3;
+      border-color: #89CDD3;
+      color: white;
+    }
+    
+    /* Vista Previa / Estadísticas */
+    .export-vista-previa {
+      padding: 1.25rem 1.5rem;
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .vista-previa-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 1.5rem;
+      color: #6b7280;
+    }
+    
+    .vista-previa-loading i {
+      width: 24px;
+      height: 24px;
+      color: #89CDD3;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .stat-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .stat-icon i {
+      width: 22px;
+      height: 22px;
+      color: white;
+    }
+    
+    .stat-icon.turnos { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .stat-icon.profesionales { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
+    .stat-icon.clientes { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    
+    .stat-info {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .stat-numero {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1f2937;
+      line-height: 1;
+    }
+    
+    .stat-label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .stat-desglose {
+      margin-left: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      font-size: 0.75rem;
+    }
+    
+    .stat-confirmado { color: #059669; }
+    .stat-cancelado { color: #dc2626; }
+    
+    .filtros-aplicados {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .filtro-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+    }
+    
+    .filtro-tag i {
+      width: 12px;
+      height: 12px;
+    }
+    
+    /* Sección título */
+    .export-section-titulo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 1.5rem 0.75rem;
+      color: #374151;
+      font-weight: 600;
+    }
+    
+    .export-section-titulo i {
+      width: 18px;
+      height: 18px;
+      color: #6FB3B8;
+    }
+    
+    /* Grid de opciones */
+    .export-options-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      padding: 0 1.5rem 1rem;
+    }
+    
+    .export-card {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: #f8fafc;
+      border: 2px solid #e5e7eb;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    
+    .export-card:hover {
+      border-color: #89CDD3;
+      background: #f0fdf9;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(137, 205, 211, 0.2);
+    }
+    
+    .export-card.destacado {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%);
+      border-color: transparent;
+      color: white;
+    }
+    
+    .export-card.destacado:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(137, 205, 211, 0.4);
+    }
+    
+    .export-card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .export-card-icon i {
+      width: 22px;
+      height: 22px;
+    }
+    
+    .export-card-icon.turnos { background: rgba(16, 185, 129, 0.15); color: #059669; }
+    .export-card-icon.profesionales { background: rgba(99, 102, 241, 0.15); color: #4f46e5; }
+    .export-card-icon.clientes { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+    .export-card-icon.completo { background: rgba(255,255,255,0.2); color: white; }
+    
+    .export-card-content h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0 0 0.15rem;
+      color: inherit;
+    }
+    
+    .export-card-content p {
+      font-size: 0.78rem;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .export-card.destacado .export-card-content p {
+      color: rgba(255,255,255,0.85);
+    }
+    
+    .export-card-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #89CDD3;
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 10px;
+      min-width: 24px;
+      text-align: center;
+    }
+    
+    .export-card.destacado .export-card-badge {
+      display: none;
+    }
+    
+    .export-card-arrow {
+      margin-left: auto;
+    }
+    
+    .export-card-arrow i {
+      width: 20px;
+      height: 20px;
+      opacity: 0.8;
+    }
+    
+    /* Exportación rápida de profesional */
+    .export-profesional-rapido {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-top: 1px solid #fbbf24;
+      border-radius: 0 0 20px 20px;
+    }
+    
+    .profesional-rapido-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #92400e;
+      font-weight: 500;
+    }
+    
+    .profesional-rapido-info i {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .btn-export-profesional {
+      background: #f59e0b;
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+    
+    .btn-export-profesional:hover {
+      background: #d97706;
+      transform: scale(1.02);
+    }
+    
+    .btn-export-profesional i {
+      width: 16px;
+      height: 16px;
+    }
+    
+    /* Notificación de exportación */
+    .export-notificacion {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: white;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      z-index: 10001;
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+      max-width: 400px;
+    }
+    
+    .export-notificacion.show {
+      transform: translateX(0);
+    }
+    
+    .export-notificacion.success {
+      border-left: 4px solid #10b981;
+    }
+    
+    .export-notificacion.success i {
+      color: #10b981;
+    }
+    
+    .export-notificacion.error {
+      border-left: 4px solid #ef4444;
+    }
+    
+    .export-notificacion.error i {
+      color: #ef4444;
+    }
+    
+    .export-notificacion.warning {
+      border-left: 4px solid #f59e0b;
+    }
+    
+    .export-notificacion.warning i {
+      color: #f59e0b;
+    }
+    
+    .export-notificacion i {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    
+    .export-notificacion span {
+      color: #374151;
+      font-size: 0.9rem;
+    }
+    
+    /* Responsive */
+    @media (max-width: 600px) {
+      .modal-exportar-mejorado {
+        max-height: 95vh;
+        border-radius: 16px 16px 0 0;
+        margin-top: auto;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .export-options-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .filtros-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .export-profesional-rapido {
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+      }
+      
+      .export-notificacion {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+        max-width: none;
+      }
+    }
+
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+      min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* ========== CONTENEDOR PRINCIPAL ========== */
+    .admin-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem 2rem 4rem;
+    }
+
+    /* ========== HEADER MEJORADO ========== */
+    .admin-header {
+      background: linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%);
+      color: white;
+      padding: 2.5rem 3rem;
+      border-radius: 24px;
+      margin-bottom: 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 40px rgba(137, 205, 211, 0.3);
+      position: relative;
+      overflow: visible;
+    }
+
+    .admin-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 400px;
+      height: 400px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 50%;
+      z-index: 0;
+    }
+
+    .admin-header::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -5%;
+      width: 300px;
+      height: 300px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
+      z-index: 0;
+    }
+
+    .admin-header > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .admin-header h1 {
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .admin-header p {
+      opacity: 0.9;
+      font-size: 1.1rem;
+      font-weight: 400;
+    }
+
+    /* ========== LOADING Y ERROR STATES ========== */
+    .loading-admin {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 300px;
+      background: white;
+      border-radius: 20px;
+      margin: 2rem;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .loading-admin div {
+      text-align: center;
+      color: #89CDD3;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(137, 205, 211, 0.3);
+      border-top: 3px solid #89CDD3;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* ========== TABS MEJORADOS ========== */
+    .admin-tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      background: white;
+      padding: 0.75rem;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 1.2rem 2rem;
+      background: transparent;
+      border: none;
+      color: #666;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 16px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      font-size: 1rem;
+      position: relative;
+    }
+
+    .tab-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(137, 205, 211, 0.1), rgba(111, 179, 184, 0.1));
+      border-radius: 16px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .tab-btn:hover::before {
+      opacity: 1;
+    }
+
+    .tab-btn:hover {
+      color: #89CDD3;
+      transform: translateY(-2px);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(137, 205, 211, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .tab-btn i {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* ========== CONTENIDO DE TABS ========== */
+    .tab-content {
+      display: none;
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ========== GRID DE FORMULARIOS MEJORADO ========== */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem;
+    }
+
+    .form-section {
+      background: white;
+      padding: 2.5rem;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      border: 2px solid rgba(137, 205, 211, 0.1);
+      margin-bottom: 2rem;
+    }
+
+    .form-section:hover {
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+      transform: translateY(-4px);
+      border-color: rgba(137, 205, 211, 0.3);
+    }
+
+    .form-section h3 {
+      color: #89CDD3;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.3rem;
+      font-weight: 700;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid rgba(137, 205, 211, 0.2);
+    }
+
+    .form-section h3 i {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* Sección de horarios ocupa ancho completo */
+    .form-section.horarios-section {
+      grid-column: 1 / -1;
+    }
+
+    /* Turnos específicos ocupa ancho completo */
+    .form-section.turnos-especificos-section {
+      grid-column: 1 / -1;
+    }
+
+    /* Animación para mostrar/ocultar secciones */
+    .seccion-animada {
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 1;
+      max-height: 5000px;
+    }
+
+    .seccion-animada.oculta {
+      opacity: 0;
+      max-height: 0;
+      margin: 0;
+      padding: 0;
+      border: none;
+    }
+
+    /* Excepciones y mensaje lado a lado - más discretos */
+    .form-section.excepciones-section,
+    .form-section.mensaje-section {
+      grid-column: span 1;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, #f8fafb 0%, #f0f4f7 100%);
+      border: 1px solid rgba(137, 205, 211, 0.15);
+    }
+
+    .form-section.excepciones-section h3,
+    .form-section.mensaje-section h3 {
+      font-size: 1.1rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      color: #6FB3B8;
+    }
+
+    /* Botones ocupan ancho completo */
+    .form-section.botones-section {
+      grid-column: 1 / -1;
+    }
+
+    /* ========== INPUTS MEJORADOS ========== */
+    .input-icon {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+    
+    .input-group {
+      margin-bottom: 1.25rem;
+    }
+    
+    .input-group label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #444;
+      margin-bottom: 0.5rem;
+    }
+    
+    .input-group input,
+    .input-group textarea,
+    .input-group select {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      border: 2px solid rgba(137, 205, 211, 0.3);
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      font-family: inherit;
+      background: #fff;
+    }
+    
+    .input-group input:focus,
+    .input-group textarea:focus,
+    .input-group select:focus {
+      border-color: #89CDD3;
+      box-shadow: 0 0 0 4px rgba(137, 205, 211, 0.1);
+      outline: none;
+    }
+    
+    .input-group input::placeholder {
+      color: #aaa;
+    }
+
+    .input-icon input,
+    .input-icon textarea {
+      width: 100%;
+      padding: 1rem;
+      border: 2px solid rgba(137, 205, 211, 0.3);
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+    
+    .input-icon input::placeholder,
+    .input-icon textarea::placeholder {
+      color: #aaa;
+    }
+
+    .input-icon i {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #666;
+      width: 18px;
+      height: 18px;
+      transition: color 0.3s ease;
+      pointer-events: none;
+    }
+
+    .input-icon input:focus,
+    .input-icon textarea:focus {
+      border-color: #89CDD3;
+      box-shadow: 0 0 0 4px rgba(137, 205, 211, 0.1);
+      outline: none;
+    }
+
+    .input-icon input:focus ~ i,
+    .input-icon textarea:focus ~ i {
+      color: #89CDD3;
+    }
+
+    /* ========== SELECTOR DE ICONOS MEJORADO ========== */
+    .icon-selector {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 0.75rem;
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 1rem;
+      background: linear-gradient(135deg, #f8fafb 0%, #f0f4f7 100%);
+      border-radius: 12px;
+      border: 2px solid rgba(137, 205, 211, 0.15);
+    }
+
+    .icon-selector::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .icon-selector::-webkit-scrollbar-track {
+      background: rgba(137, 205, 211, 0.1);
+      border-radius: 10px;
+    }
+
+    .icon-selector::-webkit-scrollbar-thumb {
+      background: #89CDD3;
+      border-radius: 10px;
+    }
+
+    .icon-option {
+      padding: 1.2rem;
+      background: white;
+      border: 2px solid rgba(137, 205, 211, 0.2);
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .icon-option:hover {
+      border-color: #89CDD3;
+      transform: scale(1.15);
+      box-shadow: 0 4px 12px rgba(137, 205, 211, 0.3);
+    }
+
+    .icon-option.selected {
+      border-color: #89CDD3;
+      background: linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%);
+      color: white;
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px rgba(137, 205, 211, 0.4);
+    }
+
+    .icon-option i {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* ========== HORARIOS MEJORADOS ========== */
+    .horarios-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .horario-dia {
+      background: linear-gradient(135deg, #f8fafb 0%, #f0f4f7 100%);
+      padding: 1.5rem;
+      border-radius: 16px;
+      border: 2px solid rgba(137, 205, 211, 0.15);
+      transition: all 0.3s ease;
+    }
+
+    .horario-dia:hover {
+      border-color: rgba(137, 205, 211, 0.4);
+      background: white;
+      box-shadow: 0 4px 12px rgba(137, 205, 211, 0.1);
+    }
+
+    .horario-dia-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.2rem;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1.05rem;
+      color: #333;
+      transition: color 0.3s ease;
+    }
+
+    .checkbox-label:hover {
+      color: #89CDD3;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      accent-color: #89CDD3;
+    }
+
+    .horarios-inputs {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .horario-chip {
+      background: white;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #89CDD3;
+      border: 2px solid rgba(137, 205, 211, 0.3);
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .horario-chip:hover {
+      border-color: #89CDD3;
+      box-shadow: 0 4px 12px rgba(137, 205, 211, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .horario-chip button {
+      background: rgba(239, 68, 68, 0.1);
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      padding: 0.25rem;
+      display: flex;
+      align-items: center;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .horario-chip button:hover {
+      background: #ef4444;
+      color: white;
+    }
+
+    .add-horario {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .add-horario input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 2px solid rgba(137, 205, 211, 0.3);
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .add-horario input:focus {
+      outline: none;
+      border-color: #89CDD3;
+      box-shadow: 0 0 0 3px rgba(137, 205, 211, 0.1);
+    }
+
+    /* ========== EXCEPCIONES MEJORADAS ========== */
+    .excepciones-input {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .excepciones-input input {
+      flex: 1;
+      padding: 0.9rem 1rem;
+      border: 2px solid rgba(137, 205, 211, 0.3);
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .excepciones-input input:focus {
+      border-color: #89CDD3;
+      box-shadow: 0 0 0 3px rgba(137, 205, 211, 0.1);
+      outline: none;
+    }
+
+    .excepciones-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .excepcion-chip {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .excepcion-chip:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+    }
+
+    .excepcion-chip button {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      padding: 0.25rem;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .excepcion-chip button:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+
+    /* ========== TEXTAREA MEJORADO ========== */
+    textarea {
+      width: 100%;
+      padding: 1rem;
+      border: 2px solid rgba(137, 205, 211, 0.3);
+      border-radius: 12px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 120px;
+      transition: all 0.3s ease;
+      font-size: 0.95rem;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #89CDD3;
+      box-shadow: 0 0 0 3px rgba(137, 205, 211, 0.1);
+    }
+
+    /* ========== BOTONES MEJORADOS ========== */
+    .btn {
+      background: linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(137, 205, 211, 0.3);
+      font-size: 1rem;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(137, 205, 211, 0.4);
+    }
+
+    .btn-small {
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-small i {
+      width: 15px;
+      height: 15px;
+    }
+
+    .btn-small:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .btn-edit {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    .btn-edit:hover {
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-delete {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .btn-delete:hover {
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+    }
+
+    .btn-icon-only {
+      padding: 0.6rem;
+      border-radius: 10px;
+    }
+
+    /* ========== LISTA DE PROFESIONALES ========== */
+    .profesionales-list {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .profesional-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(137, 205, 211, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .profesional-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg, #89CDD3 0%, #5fb8c0 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .profesional-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 35px rgba(137, 205, 211, 0.2);
+      border-color: rgba(137, 205, 211, 0.35);
+    }
+
+    .profesional-card:hover::before {
+      opacity: 1;
+    }
+
+    .profesional-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #89CDD3 0%, #5fb8c0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(137, 205, 211, 0.3);
+    }
+
+    .profesional-avatar.esporadico {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .profesional-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .profesional-info h4 {
+      color: #1f2937;
+      font-size: 1.1rem;
+      margin-bottom: 0.35rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .profesional-badge {
+      padding: 0.2rem 0.6rem;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .profesional-badge.esporadico {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      color: #b45309;
+    }
+
+    .profesional-badge.periodico {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #047857;
+    }
+
+    .profesional-especialidad {
+      color: #6b7280;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    .profesional-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .profesional-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .profesional-meta-item i {
+      width: 14px;
+      height: 14px;
+      color: #89CDD3;
+    }
+
+    .profesional-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    /* ========== LOGIN MEJORADO ========== */
+    .login-container {
+      max-width: 400px;
+      margin: 10vh auto;
+      background: white;
+      padding: 3rem;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      border: 2px solid rgba(137, 205, 211, 0.1);
+    }
+
+    .login-container h2 {
+      text-align: center;
+      color: #89CDD3;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .login-container .input-icon {
+      margin-bottom: 1.5rem;
+    }
+
+    .login-container .btn {
+      width: 100%;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+
+    /* ========== EMPTY STATE ========== */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    .empty-state i {
+      width: 80px;
+      height: 80px;
+      color: rgba(137, 205, 211, 0.5);
+      margin-bottom: 2rem;
+    }
+
+    .empty-state h3 {
+      color: #333;
+      margin-bottom: 1rem;
+      font-size: 1.3rem;
+    }
+
+    .empty-state p {
+      color: #666;
+      font-size: 1rem;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 1200px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .form-section.horarios-section,
+      .form-section.botones-section {
+        grid-column: 1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .admin-container {
+        padding: 1rem 0.75rem;
+      }
+      
+      .admin-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+        padding: 1.5rem 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .admin-header h1 {
+        font-size: 1.6rem;
+      }
+
+      .admin-header p {
+        font-size: 0.95rem;
+      }
+      
+      .admin-tabs {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.5rem;
+      }
+
+      .tab-btn {
+        padding: 1rem 1.5rem;
+        font-size: 0.95rem;
+      }
+      
+      .horarios-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .profesional-card {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+        padding: 1.25rem;
+      }
+
+      .profesional-avatar {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+      }
+
+      .profesional-info h4 {
+        justify-content: center;
+      }
+
+      .profesional-meta {
+        justify-content: center;
+      }
+
+      .profesional-actions {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .profesional-actions .btn-small {
+        flex: 1;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-section {
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .form-section h3 {
+        font-size: 1.1rem;
+      }
+
+      .input-group input,
+      .input-group textarea,
+      .input-group select {
+        padding: 0.75rem 0.875rem;
+        font-size: 1rem;
+      }
+
+      .horarios-inputs {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      }
+
+      .header-actions {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.5rem;
+      }
+
+      .dropdown-menu-container {
+        width: 100%;
+      }
+
+      .btn-menu,
+      .btn-export {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .dropdown-menu {
+        right: auto;
+        left: 0;
+        min-width: calc(100% - 1rem);
+      }
+
+      .admin-form {
+        gap: 0.75rem;
+      }
+
+      .admin-form input {
+        font-size: 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .admin-container {
+        padding: 0.5rem;
+      }
+
+      .admin-header {
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .admin-header h1 {
+        font-size: 1.3rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .admin-header p {
+        font-size: 0.85rem;
+      }
+
+      .tab-btn {
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+      }
+
+      .form-section {
+        padding: 1rem;
+        border-radius: 16px;
+      }
+
+      .form-section h3 {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .login-container {
+        margin: 5vh auto;
+        padding: 1.5rem;
+      }
+
+      .modal-content {
+        padding: 1rem;
+        width: 100%;
+        margin: 0.5rem;
+        border-radius: 16px;
+      }
+
+      .modal-header {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .modal-header h2 {
+        font-size: 1.2rem;
+      }
+
+      .modal-close {
+        align-self: flex-end;
+      }
+
+      .btn {
+        padding: 0.875rem 1.5rem;
+        font-size: 0.95rem;
+      }
+
+      .btn-small {
+        padding: 0.65rem 1.25rem;
+        font-size: 0.9rem;
+      }
+
+      .export-filtros-row {
+        grid-template-columns: 1fr;
+      }
+
+      .export-filtros {
+        gap: 0.75rem;
+        padding: 0.75rem;
+      }
+
+      .export-option {
+        padding: 0.75rem 1rem;
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .export-option i {
+        width: 24px;
+        height: 24px;
+      }
+
+      .horarios-inputs {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-form input {
+        font-size: 16px;
+        padding: 0.875rem 0.75rem;
+      }
+
+      .admin-item {
+        padding: 1rem;
+        flex-direction: column;
+      }
+
+      .btn-agregar-admin,
+      .btn-eliminar-admin {
+        width: 100%;
+        justify-content: center;
+        padding: 0.75rem 1rem;
+      }
+
+      .excepciones-list {
+        gap: 0.5rem;
+      }
+
+      .excepcion-chip {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+      }
+
+      .dropdown-menu {
+        min-width: calc(100vw - 2rem);
+        max-width: 100%;
+      }
+    }
+
+    /* ========== MODAL DE EXPORTACIÓN ========== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fcfd 100%);
+      padding: 2.5rem;
+      border-radius: 28px;
+      max-width: 650px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.18);
+      animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(137, 205, 211, 0.15);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid rgba(137, 205, 211, 0.2);
+    }
+
+    .modal-header h2 {
+      background: linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 1.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .modal-header h2 i {
+      width: 28px;
+      height: 28px;
+      color: #89CDD3;
+      -webkit-text-fill-color: #89CDD3;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+
+    .modal-close i {
+      width: 22px;
+      height: 22px;
+    }
+
+    .export-filtros {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, rgba(137, 205, 211, 0.08) 0%, rgba(111, 179, 184, 0.05) 100%);
+      border-radius: 18px;
+      border: 2px solid rgba(137, 205, 211, 0.25);
+      box-shadow: 0 8px 24px rgba(137, 205, 211, 0.08);
+    }
+
+    .export-filtros-profesional {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      width: 100%;
+    }
+
+    .export-filtros-profesional label {
+      font-weight: 600;
+      color: #333;
+      font-size: 0.9rem;
+    }
+
+    .export-filtros-profesional select {
+      width: 100%;
+      padding: 0.9rem 1rem;
+      border: 2px solid rgba(137, 205, 211, 0.4);
+      border-radius: 12px;
+      font-size: 1rem;
+      font-family: inherit;
+      background: white;
+      transition: all 0.3s ease;
+      color: #333;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .export-filtros-profesional select:hover,
+    .export-filtros-profesional select:focus {
+      border-color: #89CDD3;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(137, 205, 211, 0.15);
+    }
+
+    .export-filtros-fechas {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .export-filtros-fechas > div {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .export-filtros-fechas label {
+      font-weight: 600;
+      color: #333;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .export-filtros-fechas input {
+      width: 100%;
+      padding: 0.9rem 1rem;
+      border: 2px solid rgba(137, 205, 211, 0.4);
+      border-radius: 12px;
+      font-size: 1rem;
+      font-family: inherit;
+      background: white;
+      transition: all 0.3s ease;
+      color: #333;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .export-filtros-fechas input:hover,
+    .export-filtros-fechas input:focus {
+      border-color: #89CDD3;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(137, 205, 211, 0.15);
+    }
+
+    .btn-exportar-profesional {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-top: 1rem;
+      box-shadow: 0 4px 20px rgba(137, 205, 211, 0.3);
+      letter-spacing: 0.3px;
+    }
+
+    .btn-exportar-profesional:hover {
+      background: linear-gradient(135deg, #6FB3B8 0%, #5a9a9d 100%);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(137, 205, 211, 0.4);
+    }
+
+    .btn-exportar-profesional:active {
+      transform: translateY(-1px);
+    }
+
+    .btn-exportar-profesional i {
+      width: 20px;
+      height: 20px;
+    }
+
+    .export-options {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .export-option {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 1.25rem;
+      background: linear-gradient(135deg, #ffffff 0%, rgba(137, 205, 211, 0.02) 100%);
+      border: 2px solid rgba(137, 205, 211, 0.25);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .export-option::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(137, 205, 211, 0.1), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .export-option:hover::before {
+      left: 100%;
+    }
+
+    .export-option:hover {
+      border-color: #89CDD3;
+      background: linear-gradient(135deg, #ffffff 0%, rgba(137, 205, 211, 0.05) 100%);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 35px rgba(137, 205, 211, 0.25);
+    }
+
+    .export-option:active {
+      transform: translateY(-2px);
+    }
+
+    .export-option i {
+      width: 32px;
+      height: 32px;
+      color: #89CDD3;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .export-option-info {
+      flex: 1;
+      position: relative;
+      z-index: 1;
+    }
+
+    .export-option-info h4 {
+      color: #333;
+      font-size: 1.05rem;
+      margin-bottom: 0.35rem;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .export-option-info p {
+      color: #777;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      font-weight: 500;
+    }
+
+    /* Responsive para modal de exportación */
+    @media (max-width: 600px) {
+      .modal-content {
+        padding: 1.75rem;
+        width: 95%;
+        margin: 1rem;
+        max-width: calc(100vw - 2rem);
+        border-radius: 24px;
+      }
+      
+      .modal-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+      }
+
+      .modal-header h2 {
+        font-size: 1.35rem;
+      }
+
+      .modal-close {
+        align-self: flex-end;
+        margin-top: -0.5rem;
+      }
+      
+      .export-filtros-row {
+        grid-template-columns: 1fr;
+      }
+      
+      .export-filtros {
+        padding: 1.25rem;
+      }
+      
+      .export-option {
+        padding: 1rem;
+        gap: 1rem;
+      }
+
+      .export-option i {
+        width: 28px;
+        height: 28px;
+      }
+      
+      .export-option-info h4 {
+        font-size: 1rem;
+      }
+      
+      .export-option-info p {
+        font-size: 0.88rem;
+      }
+
+      .btn-exportar-profesional {
+        font-size: 0.95rem;
+        padding: 0.9rem 1.2rem;
+      }
+    }
+
+    .btn-export {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+    }
+
+    .btn-export:hover {
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    /* ========== MENÚ DESPLEGABLE ========== */
+    .dropdown-menu-container {
+      position: relative;
+    }
+
+    .btn-menu {
+      background: linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+
+    .btn-menu i {
+      width: 20px;
+      height: 20px;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      min-width: 220px;
+      padding: 0.5rem;
+      display: none;
+      flex-direction: column;
+      gap: 0.25rem;
+      z-index: 1001;
+      animation: slideDown 0.3s ease;
+    }
+
+    .dropdown-menu.active {
+      display: flex;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .dropdown-item {
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .dropdown-item:hover {
+      background: linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%);
+      color: white;
+      transform: translateX(4px);
+    }
+
+    .dropdown-item i {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: rgba(137, 205, 211, 0.2);
+      margin: 0.25rem 0;
+    }
+
+    .dropdown-item-danger {
+      color: #ef4444;
+    }
+
+    .dropdown-item-danger:hover {
+      background: #ef4444;
+      color: white;
+    }
+
+    /* ========== ESTILOS DEL MODAL DE ADMINISTRADORES ========== */
+    .modal-admins {
+      max-width: 700px;
+    }
+
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .admin-form-section,
+    .admin-list-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .admin-form-section h3,
+    .admin-list-section h3 {
+      color: #89CDD3;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid rgba(137, 205, 211, 0.2);
+    }
+
+    .admin-form {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .admin-form input {
+      flex: 1;
+      min-width: 150px;
+      padding: 0.875rem 1rem;
+      border: 2px solid rgba(137, 205, 211, 0.3);
+      border-radius: 10px;
+      font-size: 1rem;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+
+    .admin-form input:focus {
+      outline: none;
+      border-color: #89CDD3;
+      box-shadow: 0 0 0 3px rgba(137, 205, 211, 0.1);
+    }
+
+    .btn-agregar-admin {
+      padding: 0.875rem 1.5rem;
+      background: linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .btn-agregar-admin:hover {
+      background: linear-gradient(135deg, #6FB3B8 0%, #5a9a9d 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(137, 205, 211, 0.3);
+    }
+
+    .btn-agregar-admin i {
+      width: 18px;
+      height: 18px;
+    }
+
+    .admin-list-container {
+      min-height: 150px;
+      max-height: 400px;
+      overflow-y: auto;
+      padding: 0.75rem;
+      background: linear-gradient(135deg, #f8fafb 0%, #f0f4f7 100%);
+      border-radius: 12px;
+      border: 2px solid rgba(137, 205, 211, 0.15);
+    }
+
+    .admin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .admin-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: white;
+      border-radius: 10px;
+      border: 2px solid rgba(137, 205, 211, 0.15);
+      transition: all 0.3s ease;
+    }
+
+    .admin-item:hover {
+      border-color: #89CDD3;
+      box-shadow: 0 4px 12px rgba(137, 205, 211, 0.1);
+    }
+
+    .admin-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      flex: 1;
+    }
+
+    .admin-info strong {
+      color: #333;
+      font-size: 1rem;
+    }
+
+    .admin-info small {
+      color: #999;
+      font-size: 0.85rem;
+    }
+
+    .btn-eliminar-admin {
+      padding: 0.6rem 1rem;
+      background: #ff4757;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .btn-eliminar-admin:hover {
+      background: #ff3838;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+    }
+
+    .btn-eliminar-admin i {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ========== ESTILOS DEL FORMULARIO DE REGISTRO ========== */
+    .datos-basicos .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      color: #444;
+      font-size: 0.95rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 0.875rem 1rem;
+      border: 2px solid rgba(137, 205, 211, 0.3);
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #89CDD3;
+      box-shadow: 0 0 0 4px rgba(137, 205, 211, 0.1);
+    }
+
+    .iconos-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.75rem;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, #f8fafb 0%, #f0f4f7 100%);
+      border-radius: 12px;
+      border: 2px solid rgba(137, 205, 211, 0.15);
+      max-height: 450px;
+      overflow-y: auto;
+    }
+    
+    .iconos-grid::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .iconos-grid::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    
+    .iconos-grid::-webkit-scrollbar-thumb {
+      background: #89CDD3;
+      border-radius: 10px;
+    }
+
+    .iconos-grid .icon-option {
+      padding: 1rem;
+      background: white;
+      border: 2px solid rgba(137, 205, 211, 0.2);
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .iconos-grid .icon-option:hover {
+      border-color: #89CDD3;
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(137, 205, 211, 0.3);
+    }
+
+    .iconos-grid .icon-option.selected {
+      border-color: #89CDD3;
+      background: linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%);
+      color: white;
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(137, 205, 211, 0.4);
+    }
+
+    .iconos-grid .icon-option i {
+      width: 24px;
+      height: 24px;
+    }
+
+    .asignacion-rapida h4 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .asignacion-rapida h4 i {
+      width: 18px;
+      height: 18px;
+    }
+
+    @media (max-width: 768px) {
+      .datos-basicos .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app-container">
+    <!-- Loading inicial -->
+    <div class="loading-admin">
+      <div>
+        <div class="spinner"></div>
+        <p>Cargando panel de administración...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== ESPERAR A QUE FIREBASE ESTÉ LISTO ==========
+    // ...existing code...
+    function waitForFirebase() {
+      return new Promise((resolve) => {
+        const checkFirebase = () => {
+          if (window.firebaseAdmin) {
+            resolve();
+          } else {
+            setTimeout(checkFirebase, 100);
+          }
+        };
+        checkFirebase();
+      });
+    }
+
+    // ========== ESTADO DE LA APLICACIÓN ==========
+    let currentUser = null;
+    let editingProfesional = null;
+    let profesionales = [];
+
+    const iconosDisponibles = [
+      // Font Awesome icon class names (fa-solid)
+      'fa-user-md', 'fa-stethoscope', 'fa-hospital', 'fa-briefcase-medical', 'fa-syringe',
+      'fa-pills', 'fa-capsules', 'fa-heartbeat', 'fa-ambulance', 'fa-wheelchair',
+      'fa-x-ray', 'fa-dna', 'fa-bone', 'fa-brain', 'fa-lungs', 'fa-tooth',
+      'fa-baby', 'fa-bandage', 'fa-notes-medical', 'fa-thermometer', 'fa-vial',
+      'fa-vials', 'fa-microscope', 'fa-prescription-bottle', 'fa-prescription',
+      'fa-first-aid', 'fa-eye', 'fa-ear-listen', 'fa-hand-holding-medical',
+      'fa-head-side-mask', 'fa-head-side-cough', 'fa-head-side-virus',
+      'fa-hospital-user', 'fa-hospital-alt', 'fa-hospital-symbol',
+      'fa-user-nurse', 'fa-user-injured', 'fa-user-plus', 'fa-user',
+      'fa-heart', 'fa-smile', 'fa-apple-alt', 'fa-clipboard', 'fa-glasses',
+      'fa-biohazard', 'fa-virus', 'fa-vial-virus', 'fa-suitcase-medical',
+      'fa-crutch', 'fa-hand-holding-droplet', 'fa-droplet', 'fa-laptop-medical',
+      'fa-tooth', 'fa-bacteria', 'fa-bacterium', 'fa-disease', 'fa-pump-medical',
+      'fa-temperature-high', 'fa-temperature-low', 'fa-tablets', 'fa-syringe',
+      'fa-hands-wash', 'fa-hands-bubbles', 'fa-hands-holding-child', 'fa-hands-holding',
+      'fa-hands-holding-heart', 'fa-hands-holding-circle', 'fa-hands-praying',
+      'fa-hands', 'fa-hand-holding', 'fa-hand-holding-heart', 'fa-hand-holding-medical',
+      'fa-hand-sparkles', 'fa-hand-point-up', 'fa-hand-point-down', 'fa-hand-point-left',
+      'fa-hand-point-right', 'fa-hand-peace', 'fa-hand-paper', 'fa-hand-lizard',
+      'fa-hand-middle-finger', 'fa-hand-back-fist', 'fa-hand-fist', 'fa-hand-rock',
+      'fa-hand-scissors', 'fa-hand-spock', 'fa-hand-wave', 'fa-hands-clapping',
+      'fa-hands-holding', 'fa-hands-holding-heart', 'fa-hands-praying', 'fa-hands-wash'
+    ];
+
+    // ========== GESTIÓN DE DATOS CON FIREBASE ==========
+    async function cargarProfesionales() {
+      try {
+        if (!IS_PROD) console.log('📡 Intentando cargar profesionales...');
+        if (!IS_PROD) console.log('🔍 window.firebaseAdmin:', window.firebaseAdmin);
+        
+        const { db, collection, getDocs } = window.firebaseAdmin;
+        if (!IS_PROD) console.log('🔍 db:', db);
+        
+        const profesionalesCol = collection(db, 'profesionales');
+        if (!IS_PROD) console.log('🔍 profesionalesCol:', profesionalesCol);
+        
+        const snapshot = await getDocs(profesionalesCol);
+        if (!IS_PROD) console.log('🔍 snapshot.docs:', snapshot.docs.length, 'documentos');
+        
+        const profesionalesCargados = snapshot.docs.map(doc => {
+          if (!IS_PROD) console.log('📄 Doc:', doc.id, doc.data());
+          return {
+            id: doc.id,
+            ...doc.data()
+          };
+        });
+        
+        profesionales = profesionalesCargados;
+        window.profesionales = profesionalesCargados;
+        if (!IS_PROD) console.log('✅ Profesionales cargados:', profesionales.length, profesionales);
+        return profesionalesCargados;
+      } catch (error) {
+        console.error('❌ Error cargando profesionales:', error);
+        console.error('❌ Stack:', error.stack);
+        return [];
+      }
+    }
+
+    async function guardarProfesional(datosProfesional, profesionalId = null) {
+      try {
+        const { db, collection, addDoc, updateDoc, doc } = window.firebaseAdmin;
+        
+        if (profesionalId) {
+          // Actualizar profesional existente
+          const docRef = doc(db, 'profesionales', profesionalId);
+          await updateDoc(docRef, datosProfesional);
+          if (!IS_PROD) console.log('✅ Profesional actualizado:', profesionalId);
+          return profesionalId;
+        } else {
+          // Crear nuevo profesional
+          const colRef = collection(db, 'profesionales');
+          const docRef = await addDoc(colRef, datosProfesional);
+          if (!IS_PROD) console.log('✅ Profesional creado:', docRef.id);
+          return docRef.id;
+        }
+      } catch (error) {
+        console.error('❌ Error guardando profesional:', error);
+        return null;
+      }
+    }
+
+    async function eliminarProfesionalDB(id) {
+      try {
+        const { db, deleteDoc, doc } = window.firebaseAdmin;
+        await deleteDoc(doc(db, 'profesionales', id));
+        if (!IS_PROD) console.log('✅ Profesional eliminado:', id);
+        return true;
+      } catch (error) {
+        console.error('❌ Error eliminando profesional:', error);
+        return false;
+      }
+    }
+
+    // ========== AUTENTICACIÓN FIREBASE ==========
+    async function loginFirebase(email, password) {
+      try {
+        const { auth, signInWithEmailAndPassword } = window.firebaseAdmin;
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        if (!IS_PROD) console.log('✅ Login exitoso:', userCredential.user.email);
+        return userCredential.user;
+      } catch (error) {
+        console.error('❌ Error de login:', error);
+        throw error;
+      }
+    }
+
+    async function logoutFirebase() {
+      try {
+        const { auth, signOut } = window.firebaseAdmin;
+        await signOut(auth);
+        if (!IS_PROD) console.log('✅ Logout exitoso');
+      } catch (error) {
+        console.error('❌ Error al cerrar sesión:', error);
+      }
+    }
+
+    // ========== LOGIN ==========
+    function renderLogin() {
+      return `
+        <div class="login-container">
+          <h2>
+            <i data-lucide="lock"></i>
+            Panel de Administración
+          </h2>
+          <form id="login-form">
+            <div class="input-icon">
+              <input type="email" id="email" placeholder="Email" required />
+
+            </div>
+            <div class="input-icon">
+              <input type="password" id="password" placeholder="Contraseña" required />
+            </div>
+            <button type="submit" class="btn">
+              <i data-lucide="log-in"></i>
+              Iniciar Sesión
+            </button>
+          </form>
+          <div style="text-align: center; margin-top: 2rem;">
+            <a href="index.html" style="color: #89CDD3; text-decoration: none; font-weight: 500;">
+              ← Volver al inicio
+            </a>
+          </div>
+        </div>
+      `;
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        const user = await loginFirebase(email, password);
+        currentUser = user;
+        await cargarProfesionales();
+        renderApp();
+      } catch (error) {
+        alert('Email o contraseña incorrectos');
+      }
+    }
+
+    // ========== PANEL PRINCIPAL ==========
+    function renderAdmin() {
+      return `
+        <div class="admin-container">
+          <div class="admin-header">
+            <div>
+              <h1>Panel de Administración</h1>
+              <p>Gestiona profesionales y horarios</p>
+            </div>
+            <div class="header-actions">
+              <div class="dropdown-menu-container">
+                <button class="btn btn-menu" onclick="toggleMenuAcciones()">
+                  <i data-lucide="menu"></i>
+                  Opciones
+                </button>
+                <div id="menu-acciones" class="dropdown-menu">
+                  <button class="dropdown-item" onclick="abrirModalGestorAdmins(); cerrarMenuAcciones()">
+                    <i data-lucide="shield-plus"></i>
+                    Gestionar Admins
+                  </button>
+                  <button class="dropdown-item" onclick="abrirModalExportar(); cerrarMenuAcciones()">
+                    <i data-lucide="file-spreadsheet"></i>
+                    Exportar Excel
+                  </button>
+                  <div class="dropdown-divider"></div>
+                  <button class="dropdown-item dropdown-item-danger" onclick="logout()">
+                    <i data-lucide="log-out"></i>
+                    Cerrar Sesión
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-tabs">
+            <button class="tab-btn active" onclick="switchTab('registro')">
+              <i data-lucide="user-plus"></i>
+              ${editingProfesional ? 'Editar' : 'Registrar'} Profesional
+            </button>
+            <button class="tab-btn" onclick="switchTab('lista')">
+              <i data-lucide="users"></i>
+              Profesionales (${profesionales.length})
+            </button>
+            
+          </div>
+
+          <div id="tab-registro" class="tab-content active">
+            ${renderFormularioRegistro()}
+          </div>
+
+          <div id="tab-lista" class="tab-content">
+            ${renderListaProfesionales()}
+          </div>
+
+          
+        </div>
+      `;
+    }
+
+    // ========== FORMULARIO DE REGISTRO ==========
+    function renderFormularioRegistro() {
+      const profesional = editingProfesional || {
+        nombre: '',
+        especialidad: '',
+        telefono: '',
+        icono: 'fa-stethoscope',
+        duracionTurno: 60,
+        tipoProfesional: 'periodico',
+        horarios: {},
+        diasNoLaborables: [],
+        mensajeBase: '',
+        turnosEspecificos: {},
+        mostrarWhatsApp: true,
+        mensajesDirectos: []
+      };
+
+      // Inicializar temporales
+      if (!editingProfesional) {
+        horariosTemp = {};
+        excepcionesTemp = [];
+        turnosEspecificosTemp = {};
+        mensajesDirectosTemp = [];
+      } else {
+        horariosTemp = { ...profesional.horarios };
+        excepcionesTemp = [...(profesional.diasNoLaborables || [])];
+        turnosEspecificosTemp = { ...(profesional.turnosEspecificos || {}) };
+        // Compatibilidad: si tiene mensajeBase pero no mensajesDirectos, usarlo
+        mensajesDirectosTemp = [...(profesional.mensajesDirectos || (profesional.mensajeBase ? [profesional.mensajeBase] : []))];
+      }
+
+      const iconos = [
+        // Iconos médicos básicos (Font Awesome)
+        'fa-user-md', 'fa-stethoscope', 'fa-heartbeat', 'fa-brain', 'fa-eye', 'fa-tooth',
+        'fa-syringe', 'fa-pills', 'fa-capsules', 'fa-prescription-bottle', 'fa-thermometer', 'fa-x-ray',
+        'fa-bone', 'fa-wheelchair', 'fa-hospital', 'fa-ambulance', 'fa-bed', 'fa-baby',
+        'fa-dna', 'fa-microscope', 'fa-vial', 'fa-vials', 'fa-flask', 'fa-lungs',
+        'fa-heart', 'fa-hand-holding-heart', 'fa-hand-holding-medical', 'fa-notes-medical', 'fa-clipboard-list', 'fa-file-medical',
+        'fa-bandage', 'fa-briefcase-medical', 'fa-user-nurse', 'fa-user-injured', 'fa-first-aid', 'fa-kit-medical',
+        'fa-mortar-pestle', 'fa-tablets', 'fa-smoking', 'fa-heart-pulse', 'fa-droplet', 'fa-hand-dots',
+        'fa-head-side-virus', 'fa-shield-virus', 'fa-suitcase-medical', 'fa-disease', 'fa-ear-listen', 'fa-head-side-cough',
+        'fa-head-side-mask', 'fa-pump-medical', 'fa-teeth', 'fa-teeth-open', 'fa-bed-pulse', 'fa-truck-medical',
+        'fa-user', 'fa-user-plus', 'fa-users', 'fa-smile', 'fa-apple-whole', 'fa-bone-break',
+        // Iconos médicos adicionales - especialidades y equipamiento
+        'fa-staff-snake', 'fa-hospital-user', 'fa-house-medical', 'fa-house-chimney-medical', 'fa-virus', 'fa-virus-slash',
+        'fa-viruses', 'fa-bacteria', 'fa-bacterium', 'fa-biohazard', 'fa-radiation', 'fa-person-dots-from-line',
+        'fa-lungs-virus', 'fa-head-side-brain', 'fa-person-cane', 'fa-crutch', 'fa-glasses', 'fa-eye-dropper',
+        'fa-hand', 'fa-hands', 'fa-fingerprint', 'fa-person-dress', 'fa-child', 'fa-person',
+        'fa-person-pregnant', 'fa-person-breastfeeding', 'fa-baby-carriage', 'fa-ribbon', 'fa-venus', 'fa-mars',
+        'fa-transgender', 'fa-circle-h', 'fa-square-h', 'fa-star-of-life', 'fa-comment-medical', 'fa-prescription',
+        // Iconos de bienestar y fitness
+        'fa-dumbbell', 'fa-person-running', 'fa-person-walking', 'fa-spa', 'fa-hot-tub-person', 'fa-person-swimming',
+        'fa-person-biking', 'fa-person-skating', 'fa-person-skiing', 'fa-person-hiking', 'fa-weight-hanging', 'fa-stopwatch',
+        'fa-heart-circle-check', 'fa-person-praying', 'fa-yin-yang', 'fa-leaf', 'fa-seedling', 'fa-water',
+        'fa-fire', 'fa-moon', 'fa-sun', 'fa-person-falling-burst', 'fa-child-reaching', 'fa-hands-praying',
+        // Iconos adicionales variados
+        'fa-star', 'fa-bolt', 'fa-snowflake', 'fa-wind', 'fa-rainbow', 'fa-cloud-sun',
+        'fa-face-smile', 'fa-face-grin', 'fa-face-laugh', 'fa-face-kiss-wink-heart', 'fa-face-grin-hearts', 'fa-face-grin-stars',
+        'fa-clock', 'fa-hourglass', 'fa-calendar-check', 'fa-calendar-plus', 'fa-bell', 'fa-comment',
+        'fa-lightbulb', 'fa-graduation-cap', 'fa-book-medical', 'fa-book-open', 'fa-chalkboard-user', 'fa-award',
+        'fa-medal', 'fa-trophy', 'fa-gem', 'fa-crown', 'fa-shield-halved', 'fa-key',
+        'fa-wand-magic-sparkles', 'fa-hand-sparkles', 'fa-burst', 'fa-rotate', 'fa-arrows-spin', 'fa-infinity'
+      ];
+
+      return `
+        <form id="form-profesional" class="form-grid">
+          <div class="form-section datos-basicos" style="grid-column: span 1;">
+            <h3><i data-lucide="user"></i> Datos Básicos</h3>
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+              <div class="form-group">
+                <label>Nombre del Profesional *</label>
+                <input type="text" id="nombre" value="${profesional.nombre}" placeholder="Ej: Dr. Juan Pérez" required />
+              </div>
+              <div class="form-group">
+                <label>Especialidad *</label>
+                <input type="text" id="especialidad" value="${profesional.especialidad}" placeholder="Ej: Traumatología" required />
+              </div>
+              <div class="form-group">
+                <label>Teléfono (WhatsApp) *</label>
+                <input type="tel" id="telefono" value="${profesional.telefono}" placeholder="Ej: 1123456789" required />
+              </div>
+              <div class="form-group">
+                <label>Duración del turno (minutos)</label>
+                <select id="duracion" onchange="actualizarHorariosSegunDuracion()">
+                  <option value="15" ${profesional.duracionTurno == 15 ? 'selected' : ''}>15 min</option>
+                  <option value="30" ${profesional.duracionTurno == 30 ? 'selected' : ''}>30 min</option>
+                  <option value="45" ${profesional.duracionTurno == 45 ? 'selected' : ''}>45 min</option>
+                  <option value="60" ${profesional.duracionTurno == 60 ? 'selected' : ''}>60 min</option>
+                  <option value="90" ${profesional.duracionTurno == 90 ? 'selected' : ''}>90 min</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section icono-section" style="grid-column: span 1;">
+            <h3><i data-lucide="image"></i> Icono</h3>
+            <div class="iconos-grid">
+              ${iconos.map(icon => `
+                <div class="icon-option ${profesional.icono === icon ? 'selected' : ''}" 
+                     data-icon="${icon}" onclick="seleccionarIcono('${icon}')">
+                  <i class="fa-solid ${icon}"></i>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="form-section" style="grid-column: 1 / -1;">
+            <h3><i data-lucide="calendar"></i> Tipo de Atención</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">Selecciona cómo gestiona sus turnos este profesional</p>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+              <label style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.5rem; background: ${profesional.tipoProfesional === 'periodico' ? 'linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%)' : 'white'}; border: 2px solid rgba(137, 205, 211, 0.3); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; flex: 1; min-width: 250px;">
+                <input type="radio" name="tipo-profesional" value="periodico" ${profesional.tipoProfesional === 'periodico' ? 'checked' : ''} onchange="cambiarTipoProfesional('periodico')" style="accent-color: #89CDD3;">
+                <div>
+                  <strong style="display: block; margin-bottom: 0.25rem; color: ${profesional.tipoProfesional === 'periodico' ? 'white' : '#333'};">Periódico (horarios semanales)</strong>
+                  <small style="color: ${profesional.tipoProfesional === 'periodico' ? 'rgba(255,255,255,0.9)' : '#666'};">Horarios fijos que se repiten cada semana</small>
+                </div>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.5rem; background: ${profesional.tipoProfesional === 'esporadico' ? 'linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%)' : 'white'}; border: 2px solid rgba(137, 205, 211, 0.3); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; flex: 1; min-width: 250px;">
+                <input type="radio" name="tipo-profesional" value="esporadico" ${profesional.tipoProfesional === 'esporadico' ? 'checked' : ''} onchange="cambiarTipoProfesional('esporadico')" style="accent-color: #89CDD3;">
+                <div>
+                  <strong style="display: block; margin-bottom: 0.25rem; color: ${profesional.tipoProfesional === 'esporadico' ? 'white' : '#333'};">Esporádico (turnos específicos)</strong>
+                  <small style="color: ${profesional.tipoProfesional === 'esporadico' ? 'rgba(255,255,255,0.9)' : '#666'};">Guardias o turnos en fechas puntuales</small>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-section horarios-section seccion-animada ${profesional.tipoProfesional === 'periodico' ? '' : 'oculta'}" id="seccion-horarios-periodicos">
+            <h3><i data-lucide="clock"></i> Horarios de Atención Semanales</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1.25rem;">Define horarios que se repiten cada semana (Lunes a Domingo).</p>
+            
+            <div class="asignacion-rapida" style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+              <h4 style="margin-bottom: 1rem; color: #666;"><i data-lucide="zap"></i> Asignación Rápida</h4>
+              
+              <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: #666;">Selecciona días:</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                  ${[
+                    { num: 1, nombre: 'Lunes' },
+                    { num: 2, nombre: 'Martes' },
+                    { num: 3, nombre: 'Miércoles' },
+                    { num: 4, nombre: 'Jueves' },
+                    { num: 5, nombre: 'Viernes' },
+                    { num: 6, nombre: 'Sábado' },
+                    { num: 0, nombre: 'Domingo' }
+                  ].map(d => `
+                    <label class="dia-rapido-label" data-dia="${d.num}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: white; border: 2px solid rgba(137, 205, 211, 0.3); border-radius: 10px; cursor: pointer; transition: all 0.3s ease;">
+                      <input type="checkbox" class="dia-rapido-check" data-dia="${d.num}" onchange="toggleDiaRapido(${d.num})" style="accent-color: #89CDD3;">
+                      <span>${d.nombre}</span>
+                    </label>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: #666;">Selecciona horarios:</label>
+                <div id="horarios-rapidos-periodico" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
+                  ${generarBotonesHorario(profesional.duracionTurno || 60, 'btn-horario-rapido', 'toggleHorarioRapido')}
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                  <input type="time" id="hora-personalizada" placeholder="HH:MM" style="padding: 0.75rem 1rem; border: 2px solid rgba(137, 205, 211, 0.3); border-radius: 10px; flex: 1; min-width: 120px;" />
+                  <button type="button" class="btn-small btn-edit" onclick="agregarHoraPersonalizada()" style="flex-shrink: 0;">
+                    <i data-lucide="plus"></i> Agregar
+                  </button>
+                </div>
+              </div>
+
+              <button type="button" class="btn" onclick="aplicarAsignacionRapida()" style="width: 100%; margin-top: 1.5rem; justify-content: center;">
+                <i data-lucide="check"></i> Aplicar a los días seleccionados
+              </button>
+            </div>
+
+            <div class="horarios-grid">
+              ${renderHorariosDias(profesional.horarios)}
+            </div>
+          </div>
+
+          <div class="form-section turnos-especificos-section seccion-animada ${profesional.tipoProfesional === 'esporadico' ? '' : 'oculta'}" id="seccion-turnos-esporadicos">
+            <h3><i data-lucide="calendar-plus"></i> Turnos en Fechas Específicas</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1.25rem;">Agrega horarios para fechas puntuales (turnos únicos, guardias mensuales, etc.).</p>
+            
+            <div class="asignacion-rapida" style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+              <h4 style="margin-bottom: 1rem; color: #666;"><i data-lucide="zap"></i> Asignación Rápida de Horarios</h4>
+              
+              <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: #666;">Selecciona horarios:</label>
+                <div id="horarios-rapidos-esporadico" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
+                  ${generarBotonesHorario(profesional.duracionTurno || 60, 'btn-horario-rapido-turno', 'toggleHorarioRapidoTurno')}
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                  <input type="time" id="hora-personalizada-turno" placeholder="HH:MM" style="padding: 0.75rem 1rem; border: 2px solid rgba(137, 205, 211, 0.3); border-radius: 10px; flex: 1; min-width: 120px;" />
+                  <button type="button" class="btn-small btn-edit" onclick="agregarHoraPersonalizadaTurno()" style="flex-shrink: 0;">
+                    <i data-lucide="plus"></i> Agregar
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+              <input type="date" id="fecha-turno-especifico" 
+                     style="flex: 1; min-width: 150px; padding: 0.75rem; border: 2px solid rgba(137, 205, 211, 0.3); border-radius: 10px;" />
+              <button type="button" class="btn" onclick="aplicarHorariosRapidosTurno()" style="flex: 1; min-width: 200px;">
+                <i data-lucide="calendar-plus"></i> Agregar horarios seleccionados a esta fecha
+              </button>
+            </div>
+            
+            <div id="turnos-especificos-list">
+              ${Object.keys(profesional.turnosEspecificos || {}).length === 0 
+                ? '<p style="color: #999; text-align: center; padding: 1rem;">No hay turnos específicos programados</p>'
+                : Object.keys(profesional.turnosEspecificos || {}).sort().map(fecha => `
+                  <div style="background: white; padding: 1rem; border-radius: 10px; border: 2px solid rgba(137, 205, 211, 0.3); margin-bottom: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                      <strong style="color: #89CDD3; font-size: 1.05rem;">
+                        <i data-lucide="calendar"></i> ${formatearFecha(fecha)}
+                      </strong>
+                      <button type="button" class="btn-small btn-delete" onclick="eliminarFechaEspecifica('${fecha}')" style="padding: 0.4rem 0.75rem;">
+                        <i data-lucide="trash-2"></i>
+                      </button>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                      ${(profesional.turnosEspecificos[fecha] || []).map(hora => `
+                        <div class="horario-chip">
+                          ${hora}
+                          <button type="button" onclick="eliminarTurnoEspecifico('${fecha}', '${hora}')">
+                            <i data-lucide="x"></i>
+                          </button>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+                `).join('')
+              }
+            </div>
+          </div>
+
+          <div class="form-section excepciones-section">
+            <h3><i data-lucide="calendar-x"></i> Días No Laborables</h3>
+            <div class="excepciones-input">
+              <input type="date" id="nueva-excepcion" />
+              <button type="button" class="btn-small btn-edit" onclick="agregarExcepcion()">
+                <i data-lucide="plus"></i> Agregar
+              </button>
+            </div>
+            <div class="excepciones-list" id="excepciones-list">
+              ${(profesional.diasNoLaborables || []).map(fecha => `
+                <div class="excepcion-chip">
+                  ${formatearFecha(fecha)}
+                  <button type="button" onclick="eliminarExcepcion('${fecha}')">
+                    <i data-lucide="x"></i>
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="form-section mensaje-section">
+            <h3><i data-lucide="message-square"></i> Mensajes WhatsApp para contacto directo</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+              Agrega uno o más mensajes predeterminados. Si hay varios, el paciente podrá elegir cuál enviar.
+            </p>
+            
+            <div id="mensajes-directos-lista" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              ${renderMensajesDirectos(profesional.mensajesDirectos || (profesional.mensajeBase ? [profesional.mensajeBase] : []))}
+            </div>
+            
+            <button type="button" onclick="agregarMensajeDirecto()" 
+                    style="margin-top: 1rem; padding: 0.75rem 1.25rem; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: 500; transition: transform 0.2s, box-shadow 0.2s;"
+                    onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px rgba(37,211,102,0.3)';"
+                    onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+              <i data-lucide="plus"></i> Agregar mensaje
+            </button>
+            
+            <div style="margin-top: 1.25rem; padding: 1rem; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; border: 1px solid rgba(34, 197, 94, 0.2);">
+              <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                <input type="checkbox" id="mostrar-whatsapp" ${profesional.mostrarWhatsApp !== false ? 'checked' : ''} 
+                       style="width: 20px; height: 20px; accent-color: #25D366; cursor: pointer;" />
+                <div>
+                  <strong style="display: flex; align-items: center; gap: 0.5rem; color: #166534;">
+                    <svg viewBox="0 0 24 24" fill="#25D366" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    Mostrar botón de contacto directo
+                  </strong>
+                  <small style="color: #15803d; display: block; margin-top: 0.25rem;">Los pacientes podrán contactar al profesional por WhatsApp desde el modal de reserva</small>
+                </div>
+              </label>
+            </div>
+
+            <div id="solo-whatsapp-container" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-radius: 12px; border: 1px solid rgba(234, 179, 8, 0.3);">
+              <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                <input type="checkbox" id="solo-whatsapp" ${profesional.soloWhatsApp ? 'checked' : ''} 
+                       onchange="toggleSoloWhatsApp(this.checked)"
+                       style="width: 20px; height: 20px; accent-color: #eab308; cursor: pointer;" />
+                <div>
+                  <strong style="display: flex; align-items: center; gap: 0.5rem; color: #854d0e;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" width="18" height="18"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    Solo contacto por WhatsApp
+                  </strong>
+                  <small style="color: #a16207; display: block; margin-top: 0.25rem;">Desactiva la reserva de turnos online. Los pacientes solo podrán contactar por WhatsApp.</small>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-section botones-section">
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+              <button type="submit" class="btn">
+                <i data-lucide="save"></i>
+                ${editingProfesional ? 'Actualizar' : 'Guardar'} Profesional
+              </button>
+              ${editingProfesional ? `
+                <button type="button" class="btn" onclick="cancelarEdicion()" 
+                        style="background: #666;">
+                  <i data-lucide="x"></i> Cancelar
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </form>
+      `;
+    }
+
+    function renderHorariosDias(horariosActuales = {}) {
+      const dias = [
+        { num: 1, nombre: 'Lunes' },
+        { num: 2, nombre: 'Martes' },
+        { num: 3, nombre: 'Miércoles' },
+        { num: 4, nombre: 'Jueves' },
+        { num: 5, nombre: 'Viernes' },
+        { num: 6, nombre: 'Sábado' },
+        { num: 0, nombre: 'Domingo' }
+      ];
+
+      return dias.map(dia => {
+        const horarios = horariosActuales[dia.num] || [];
+        const activo = horarios.length > 0;
+
+        return `
+          <div class="horario-dia">
+            <div class="horario-dia-header">
+              <label class="checkbox-label">
+                <input type="checkbox" class="dia-checkbox" 
+                       data-dia="${dia.num}" ${activo ? 'checked' : ''}
+                       onchange="toggleDia(${dia.num})">
+                ${dia.nombre}
+              </label>
+            </div>
+            <div id="horarios-${dia.num}" style="${activo ? '' : 'display: none;'}">
+              <div class="horarios-inputs" id="horarios-list-${dia.num}">
+                ${horarios.map(h => `
+                  <div class="horario-chip">
+                    ${h}
+                    <button type="button" onclick="eliminarHorario(${dia.num}, '${h}')">
+                      <i data-lucide="x"></i>
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="add-horario">
+                <input type="time" id="input-hora-${dia.num}" />
+                <button type="button" class="btn-small btn-edit" 
+                        onclick="agregarHorario(${dia.num})">
+                  <i data-lucide="plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ========== LISTA DE PROFESIONALES ==========
+    function renderListaProfesionales() {
+      if (profesionales.length === 0) {
+        return `
+          <div class="empty-state">
+            <i data-lucide="users"></i>
+            <h3>No hay profesionales registrados</h3>
+            <p>Comienza registrando tu primer profesional</p>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="profesionales-list">
+          ${profesionales.map(p => {
+            const esEsporadico = p.tipoProfesional === 'esporadico';
+            const cantidadDias = esEsporadico 
+              ? Object.keys(p.turnosEspecificos || {}).length
+              : Object.keys(p.horarios || {}).length;
+            const infoHorarios = esEsporadico 
+              ? `${cantidadDias} fecha${cantidadDias !== 1 ? 's' : ''}`
+              : `${cantidadDias} día${cantidadDias !== 1 ? 's' : ''}`;
+            
+            return `
+            <div class="profesional-card">
+              <div class="profesional-avatar ${esEsporadico ? 'esporadico' : ''}">
+                <i class="fa-solid ${p.icono || 'fa-user-doctor'}"></i>
+              </div>
+              <div class="profesional-info">
+                <h4>
+                  ${p.nombre}
+                  <span class="profesional-badge ${esEsporadico ? 'esporadico' : 'periodico'}">
+                    ${esEsporadico ? 'Esporádico' : 'Periódico'}
+                  </span>
+                </h4>
+                <div class="profesional-especialidad">${p.especialidad}</div>
+                <div class="profesional-meta">
+                  <span class="profesional-meta-item">
+                    <i data-lucide="calendar"></i>
+                    ${infoHorarios}
+                  </span>
+                  <span class="profesional-meta-item">
+                    <i data-lucide="clock"></i>
+                    ${p.duracionTurno || 60} min
+                  </span>
+                  ${p.whatsapp ? `
+                  <span class="profesional-meta-item">
+                    <i data-lucide="message-circle"></i>
+                    WhatsApp
+                  </span>
+                  ` : ''}
+                </div>
+              </div>
+              <div class="profesional-actions">
+                <button class="btn-small btn-edit" onclick="editarProfesional('${p.id}')" title="Editar">
+                  <i data-lucide="edit-2"></i> Editar
+                </button>
+                <button class="btn-small btn-delete btn-icon-only" onclick="eliminarProfesional('${p.id}')" title="Eliminar">
+                  <i data-lucide="trash-2"></i>
+                </button>
+              </div>
+            </div>
+          `;}).join('')}
+        </div>
+      `;
+    }
+
+    // ========== FUNCIONES DE INTERACCIÓN ==========
+    let horariosTemp = {};
+    let excepcionesTemp = [];
+    let diasRapidosTemp = {};
+    let turnosEspecificosTemp = {};
+
+    // ========== GENERACIÓN DINÁMICA DE HORARIOS ==========
+    /**
+     * Genera un array de horarios desde las 08:00 hasta las 20:00
+     * con intervalos según la duración del turno
+     */
+    function generarHorariosSegunDuracion(duracionMinutos) {
+      const horarios = [];
+      const horaInicio = 8 * 60; // 08:00 en minutos
+      const horaFin = 20 * 60;   // 20:00 en minutos
+      
+      for (let minutos = horaInicio; minutos <= horaFin; minutos += duracionMinutos) {
+        const horas = Math.floor(minutos / 60);
+        const mins = minutos % 60;
+        const horaFormateada = `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+        horarios.push(horaFormateada);
+      }
+      
+      return horarios;
+    }
+
+    /**
+     * Genera el HTML de los botones de horario
+     */
+    function generarBotonesHorario(duracion, clase, funcionClick) {
+      const horarios = generarHorariosSegunDuracion(duracion);
+      return horarios.map(hora => `
+        <button type="button" class="${clase}" data-hora="${hora}" onclick="${funcionClick}('${hora}')" style="padding: 0.75rem; background: white; border: 2px solid rgba(137, 205, 211, 0.3); color: #89CDD3; border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">
+          ${hora}
+        </button>
+      `).join('');
+    }
+
+    /**
+     * Actualiza los contenedores de horarios cuando cambia la duración del turno
+     */
+    function actualizarHorariosSegunDuracion() {
+      const duracion = parseInt(document.getElementById('duracion').value) || 60;
+      
+      // Actualizar horarios para profesionales periódicos
+      const containerPeriodico = document.getElementById('horarios-rapidos-periodico');
+      if (containerPeriodico) {
+        containerPeriodico.innerHTML = generarBotonesHorario(duracion, 'btn-horario-rapido', 'toggleHorarioRapido');
+      }
+      
+      // Actualizar horarios para profesionales esporádicos
+      const containerEsporadico = document.getElementById('horarios-rapidos-esporadico');
+      if (containerEsporadico) {
+        containerEsporadico.innerHTML = generarBotonesHorario(duracion, 'btn-horario-rapido-turno', 'toggleHorarioRapidoTurno');
+      }
+      
+      // Actualizar iconos de Lucide
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    }
+
+    function cambiarTipoProfesional(tipo) {
+      const seccionPeriodicos = document.getElementById('seccion-horarios-periodicos');
+      const seccionEsporadicos = document.getElementById('seccion-turnos-esporadicos');
+      
+      if (tipo === 'periodico') {
+        seccionEsporadicos.classList.add('oculta');
+        setTimeout(() => {
+          seccionPeriodicos.classList.remove('oculta');
+        }, 50);
+      } else {
+        seccionPeriodicos.classList.add('oculta');
+        setTimeout(() => {
+          seccionEsporadicos.classList.remove('oculta');
+        }, 50);
+      }
+      
+      // Actualizar estilos de los labels
+      document.querySelectorAll('input[name="tipo-profesional"]').forEach(radio => {
+        const label = radio.parentElement;
+        if (radio.value === tipo) {
+          label.style.background = 'linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%)';
+          label.querySelector('strong').style.color = 'white';
+          label.querySelector('small').style.color = 'rgba(255,255,255,0.9)';
+        } else {
+          label.style.background = 'white';
+          label.querySelector('strong').style.color = '#333';
+          label.querySelector('small').style.color = '#666';
+        }
+      });
+    }
+
+    // Inicializar horariosTemp desde editingProfesional
+    function inicializarHorarios() {
+      if (editingProfesional && editingProfesional.horarios) {
+        horariosTemp = { ...editingProfesional.horarios };
+        excepcionesTemp = [...(editingProfesional.diasNoLaborables || [])];
+        turnosEspecificosTemp = { ...(editingProfesional.turnosEspecificos || {}) };
+      } else {
+        horariosTemp = {};
+        excepcionesTemp = [];
+        turnosEspecificosTemp = {};
+      }
+    }
+
+    function toggleDia(dia) {
+      const container = document.getElementById(`horarios-${dia}`);
+      const checkbox = document.querySelector(`input[data-dia="${dia}"]`);
+      container.style.display = checkbox.checked ? 'block' : 'none';
+      
+      if (!checkbox.checked) {
+        horariosTemp[dia] = [];
+      }
+    }
+
+    function toggleSoloWhatsApp(checked) {
+      const mostrarWhatsAppCheckbox = document.getElementById('mostrar-whatsapp');
+      if (checked && mostrarWhatsAppCheckbox) {
+        // Si se activa "Solo WhatsApp", asegurar que "Mostrar WhatsApp" también esté activo
+        mostrarWhatsAppCheckbox.checked = true;
+      }
+    }
+
+    function agregarHorario(dia) {
+      const input = document.getElementById(`input-hora-${dia}`);
+      if (!input.value) return;
+
+      if (!horariosTemp[dia]) horariosTemp[dia] = [];
+      
+      if (!horariosTemp[dia].includes(input.value)) {
+        horariosTemp[dia].push(input.value);
+        horariosTemp[dia].sort();
+        actualizarHorariosVista(dia);
+      }
+      
+      input.value = '';
+    }
+
+    function eliminarHorario(dia, hora) {
+      if (!horariosTemp[dia]) return;
+      horariosTemp[dia] = horariosTemp[dia].filter(h => h !== hora);
+      actualizarHorariosVista(dia);
+    }
+
+    function actualizarHorariosVista(dia) {
+      const container = document.getElementById(`horarios-list-${dia}`);
+      if (!container) return;
+      
+      container.innerHTML = (horariosTemp[dia] || []).map(h => `
+        <div class="horario-chip">
+          ${h}
+          <button type="button" onclick="eliminarHorario(${dia}, '${h}')">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function seleccionarIcono(icon) {
+      document.querySelectorAll('.icon-option').forEach(el => {
+        el.classList.remove('selected');
+      });
+      const selectedIcon = document.querySelector(`[data-icon="${icon}"]`);
+      if (selectedIcon) {
+        selectedIcon.classList.add('selected');
+      }
+    }
+    
+    // Alias para compatibilidad
+    function selectIcon(icon) {
+      seleccionarIcono(icon);
+    }
+
+    function agregarExcepcion() {
+      const input = document.getElementById('nueva-excepcion');
+      if (!input.value) return;
+      
+      if (!excepcionesTemp.includes(input.value)) {
+        excepcionesTemp.push(input.value);
+        excepcionesTemp.sort();
+        actualizarExcepcionesVista();
+      }
+      
+      input.value = '';
+    }
+
+    function eliminarExcepcion(fecha) {
+      excepcionesTemp = excepcionesTemp.filter(f => f !== fecha);
+      actualizarExcepcionesVista();
+    }
+
+    function actualizarExcepcionesVista() {
+      const container = document.getElementById('excepciones-list');
+      if (!container) return;
+      
+      container.innerHTML = excepcionesTemp.map(fecha => `
+        <div class="excepcion-chip">
+          ${formatearFecha(fecha)}
+          <button type="button" onclick="eliminarExcepcion('${fecha}')">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function toggleDiaRapido(dia) {
+      const checkbox = document.querySelector(`.dia-rapido-check[data-dia="${dia}"]`);
+      const label = document.querySelector(`.dia-rapido-label[data-dia="${dia}"]`);
+      
+      if (checkbox.checked) {
+        diasRapidosTemp[dia] = true;
+        label.style.background = 'linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%)';
+        label.style.borderColor = '#89CDD3';
+        label.style.color = 'white';
+        label.querySelector('span').style.color = 'white';
+      } else {
+        delete diasRapidosTemp[dia];
+        label.style.background = 'white';
+        label.style.borderColor = 'rgba(137, 205, 211, 0.3)';
+        label.style.color = 'initial';
+        label.querySelector('span').style.color = 'initial';
+      }
+    }
+
+    function toggleHorarioRapido(hora) {
+      const btn = document.querySelector(`.btn-horario-rapido[data-hora="${hora}"]`);
+      
+      if (!btn) return;
+      
+      const currentHorarios = new Set(Object.values(diasRapidosTemp || {}).flat());
+      if (!currentHorarios) currentHorarios = new Set();
+      
+      if (btn.style.background === 'linear-gradient(135deg, rgb(137, 205, 211) 0%, rgb(111, 179, 184) 100%)' || 
+          btn.classList.contains('selected')) {
+        btn.style.background = 'white';
+        btn.style.color = '#89CDD3';
+        btn.classList.remove('selected');
+      } else {
+        btn.style.background = 'linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%)';
+        btn.style.color = 'white';
+        btn.classList.add('selected');
+      }
+    }
+
+    function agregarHoraPersonalizada() {
+      const input = document.getElementById('hora-personalizada');
+      const hora = input.value;
+      
+      if (!hora) {
+        alert('Selecciona una hora válida');
+        return;
+      }
+      
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-horario-rapido selected';
+      btn.dataset.hora = hora;
+      btn.onclick = function() { toggleHorarioRapido(hora); this.remove(); };
+      btn.style.padding = '0.75rem';
+      btn.style.background = 'linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%)';
+      btn.style.color = 'white';
+      btn.style.border = '2px solid rgba(137, 205, 211, 0.3)';
+      btn.style.borderRadius = '10px';
+      btn.style.cursor = 'pointer';
+      btn.style.fontWeight = '600';
+      btn.textContent = hora;
+      
+      const container = document.querySelector('[style*="repeat(auto-fill, minmax(80px"])');
+      if (container) {
+        container.appendChild(btn);
+      }
+      
+      input.value = '';
+    }
+
+    function toggleHorarioRapidoTurno(hora) {
+      const btn = document.querySelector(`.btn-horario-rapido-turno[data-hora="${hora}"]`);
+      
+      if (!btn) return;
+      
+      if (btn.style.background === 'linear-gradient(135deg, rgb(137, 205, 211) 0%, rgb(111, 179, 184) 100%)' || 
+          btn.classList.contains('selected')) {
+        btn.style.background = 'white';
+        btn.style.color = '#89CDD3';
+        btn.classList.remove('selected');
+      } else {
+        btn.style.background = 'linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%)';
+        btn.style.color = 'white';
+        btn.classList.add('selected');
+      }
+    }
+
+    function agregarHoraPersonalizadaTurno() {
+      const input = document.getElementById('hora-personalizada-turno');
+      const hora = input.value;
+      
+      if (!hora) {
+        alert('Selecciona una hora válida');
+        return;
+      }
+      
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-horario-rapido-turno selected';
+      btn.dataset.hora = hora;
+      btn.onclick = function() { toggleHorarioRapidoTurno(hora); this.remove(); };
+      btn.style.padding = '0.75rem';
+      btn.style.background = 'linear-gradient(135deg, #89CDD3 0%, #6FB3B8 100%)';
+      btn.style.color = 'white';
+      btn.style.border = '2px solid rgba(137, 205, 211, 0.3)';
+      btn.style.borderRadius = '10px';
+      btn.style.cursor = 'pointer';
+      btn.style.fontWeight = '600';
+      btn.textContent = hora;
+      
+      const container = document.querySelector('.turnos-especificos-section [style*="repeat(auto-fill, minmax(80px"])');
+      if (container) {
+        container.appendChild(btn);
+      }
+      
+      input.value = '';
+    }
+
+    function aplicarHorariosRapidosTurno() {
+      const fechaInput = document.getElementById('fecha-turno-especifico');
+      const fecha = fechaInput.value;
+      
+      if (!fecha) {
+        alert('⚠️ Selecciona una fecha primero');
+        return;
+      }
+      
+      const horariosSeleccionados = Array.from(document.querySelectorAll('.btn-horario-rapido-turno.selected')).map(btn => btn.dataset.hora);
+      
+      if (horariosSeleccionados.length === 0) {
+        alert('⚠️ Selecciona al menos un horario');
+        return;
+      }
+      
+      if (!turnosEspecificosTemp[fecha]) {
+        turnosEspecificosTemp[fecha] = [];
+      }
+      
+      horariosSeleccionados.forEach(hora => {
+        if (!turnosEspecificosTemp[fecha].includes(hora)) {
+          turnosEspecificosTemp[fecha].push(hora);
+        }
+      });
+      
+      turnosEspecificosTemp[fecha].sort();
+      actualizarTurnosEspecificosVista();
+      
+      alert(`✅ ${horariosSeleccionados.length} horario(s) agregados al ${formatearFecha(fecha)}`);
+      
+      // Limpiar selección de horarios (solo deseleccionar, no eliminar botones generados dinámicamente)
+      const duracionActual = parseInt(document.getElementById('duracion').value) || 60;
+      const horariosBase = generarHorariosSegunDuracion(duracionActual);
+      
+      document.querySelectorAll('.btn-horario-rapido-turno').forEach(btn => {
+        if (btn.dataset.hora && !horariosBase.includes(btn.dataset.hora)) {
+          btn.remove(); // Eliminar horarios personalizados
+        } else {
+          btn.style.background = 'white';
+          btn.style.color = '#89CDD3';
+          btn.classList.remove('selected');
+        }
+      });
+    }
+
+    function aplicarAsignacionRapida() {
+      const diasSeleccionados = Object.keys(diasRapidosTemp).map(d => parseInt(d));
+      const horariosSeleccionados = Array.from(document.querySelectorAll('.btn-horario-rapido.selected')).map(btn => btn.dataset.hora);
+      
+      if (diasSeleccionados.length === 0 || horariosSeleccionados.length === 0) {
+        alert('Selecciona al menos un día y un horario');
+        return;
+      }
+      
+      // Aplicar a todos los días seleccionados
+      diasSeleccionados.forEach(dia => {
+        if (!horariosTemp[dia]) {
+          horariosTemp[dia] = [];
+        }
+        horariosSeleccionados.forEach(hora => {
+          if (!horariosTemp[dia].includes(hora)) {
+            horariosTemp[dia].push(hora);
+          }
+        });
+        horariosTemp[dia].sort();
+      });
+      
+      // Actualizar vistas
+      diasSeleccionados.forEach(dia => {
+        // Marcar checkbox
+        const diaCheckbox = document.querySelector(`input[data-dia="${dia}"].dia-checkbox`);
+        if (diaCheckbox) {
+          diaCheckbox.checked = true;
+          toggleDia(dia);
+        }
+        actualizarHorariosVista(dia);
+      });
+      
+      alert(`✅ Horarios asignados a ${diasSeleccionados.length} día(s)`);
+      
+      // Limpiar sección rápida
+      diasRapidosTemp = {};
+      document.querySelectorAll('.dia-rapido-check').forEach(checkbox => {
+        checkbox.checked = false;
+        const label = checkbox.closest('.dia-rapido-label');
+        if (label) {
+          label.style.background = 'white';
+          label.style.borderColor = 'rgba(137, 205, 211, 0.3)';
+          label.style.color = 'initial';
+          label.querySelector('span').style.color = 'initial';
+        }
+      });
+      
+      document.querySelectorAll('.btn-horario-rapido').forEach(btn => {
+        // Solo deseleccionar, los botones se regeneran dinámicamente
+        btn.style.background = 'white';
+        btn.style.color = '#89CDD3';
+        btn.classList.remove('selected');
+      });
+    }
+
+    function formatearFecha(fecha) {
+      const [y, m, d] = fecha.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    // ========== MENSAJES DIRECTOS WHATSAPP ==========
+    let mensajesDirectosTemp = [];
+
+    function renderMensajesDirectos(mensajes) {
+      mensajesDirectosTemp = mensajes || [];
+      if (mensajesDirectosTemp.length === 0) {
+        return `<div style="color: #888; font-style: italic; padding: 1rem; text-align: center; background: #f5f5f5; border-radius: 8px;">
+          No hay mensajes configurados. Los pacientes verán un mensaje predeterminado.
+        </div>`;
+      }
+      return mensajesDirectosTemp.map((msg, index) => `
+        <div class="mensaje-directo-item" style="display: flex; gap: 0.5rem; align-items: flex-start; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 0.75rem; border-radius: 10px; border: 1px solid #e2e8f0;">
+          <span style="background: #25D366; color: white; font-weight: bold; min-width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">${index + 1}</span>
+          <textarea class="mensaje-directo-textarea" data-index="${index}" rows="2" 
+                    style="flex: 1; padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px; resize: vertical; font-family: inherit;"
+                    placeholder="Escribe el mensaje..."
+                    onchange="actualizarMensajeDirecto(${index}, this.value)">${msg}</textarea>
+          <button type="button" onclick="eliminarMensajeDirecto(${index})" 
+                  style="background: #fee2e2; color: #dc2626; border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                  title="Eliminar mensaje">
+            <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function actualizarMensajesDirectosUI() {
+      const container = document.getElementById('mensajes-directos-lista');
+      if (container) {
+        container.innerHTML = renderMensajesDirectos(mensajesDirectosTemp);
+        lucide.createIcons();
+      }
+    }
+
+    function agregarMensajeDirecto() {
+      mensajesDirectosTemp.push('');
+      actualizarMensajesDirectosUI();
+      // Enfocar el nuevo textarea
+      setTimeout(() => {
+        const textareas = document.querySelectorAll('.mensaje-directo-textarea');
+        if (textareas.length > 0) {
+          textareas[textareas.length - 1].focus();
+        }
+      }, 100);
+    }
+
+    function actualizarMensajeDirecto(index, valor) {
+      mensajesDirectosTemp[index] = valor;
+    }
+
+    function eliminarMensajeDirecto(index) {
+      mensajesDirectosTemp.splice(index, 1);
+      actualizarMensajesDirectosUI();
+    }
+
+    // ========== TURNOS ESPECÍFICOS ==========
+    function agregarTurnoEspecifico() {
+      const fechaInput = document.getElementById('fecha-turno-especifico');
+      const horaInput = document.getElementById('hora-turno-especifico');
+      
+      if (!fechaInput.value || !horaInput.value) {
+        alert('⚠️ Selecciona una fecha y una hora');
+        return;
+      }
+      
+      const fecha = fechaInput.value;
+      const hora = horaInput.value;
+      
+      if (!turnosEspecificosTemp[fecha]) {
+        turnosEspecificosTemp[fecha] = [];
+      }
+      
+      if (!turnosEspecificosTemp[fecha].includes(hora)) {
+        turnosEspecificosTemp[fecha].push(hora);
+        turnosEspecificosTemp[fecha].sort();
+        actualizarTurnosEspecificosVista();
+      }
+      
+      horaInput.value = '';
+    }
+
+    function eliminarTurnoEspecifico(fecha, hora) {
+      if (!turnosEspecificosTemp[fecha]) return;
+      
+      turnosEspecificosTemp[fecha] = turnosEspecificosTemp[fecha].filter(h => h !== hora);
+      
+      // Si no quedan horarios, eliminar la fecha
+      if (turnosEspecificosTemp[fecha].length === 0) {
+        delete turnosEspecificosTemp[fecha];
+      }
+      
+      actualizarTurnosEspecificosVista();
+    }
+
+    function eliminarFechaEspecifica(fecha) {
+      if (confirm(`¿Eliminar todos los turnos del ${formatearFecha(fecha)}?`)) {
+        delete turnosEspecificosTemp[fecha];
+        actualizarTurnosEspecificosVista();
+      }
+    }
+
+    function actualizarTurnosEspecificosVista() {
+      const container = document.getElementById('turnos-especificos-list');
+      if (!container) return;
+      
+      const fechas = Object.keys(turnosEspecificosTemp).sort();
+      
+      if (fechas.length === 0) {
+        container.innerHTML = '<p style="color: #999; text-align: center; padding: 1rem;">No hay turnos específicos programados</p>';
+        return;
+      }
+      
+      container.innerHTML = fechas.map(fecha => `
+        <div style="background: white; padding: 1rem; border-radius: 10px; border: 2px solid rgba(137, 205, 211, 0.3); margin-bottom: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <strong style="color: #89CDD3; font-size: 1.05rem;">
+              <i data-lucide="calendar"></i> ${formatearFecha(fecha)}
+            </strong>
+            <button type="button" class="btn-small btn-delete" onclick="eliminarFechaEspecifica('${fecha}')" style="padding: 0.4rem 0.75rem;">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            ${turnosEspecificosTemp[fecha].map(hora => `
+              <div class="horario-chip">
+                ${hora}
+                <button type="button" onclick="eliminarTurnoEspecifico('${fecha}', '${hora}')">
+                  <i data-lucide="x"></i>
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+      
+      lucide.createIcons();
+    }
+
+    async function handleGuardarProfesional(e) {
+      e.preventDefault();
+      
+      try {
+        // Validación básica
+        const nombre = document.getElementById('nombre').value?.trim();
+        const especialidad = document.getElementById('especialidad').value?.trim();
+        const telefono = document.getElementById('telefono').value?.trim();
+        const duracion = document.getElementById('duracion').value;
+        const tipoProfesional = document.querySelector('input[name="tipo-profesional"]:checked')?.value || 'periodico';
+        
+        if (!nombre || !especialidad || !telefono || !duracion) {
+          alert('⚠️ Por favor completa todos los campos requeridos');
+          return;
+        }
+        
+        // Verificar si es modo "Solo WhatsApp"
+        const esSoloWhatsApp = document.getElementById('solo-whatsapp')?.checked === true;
+        
+        // Validar según el tipo de profesional (solo si NO es "Solo WhatsApp")
+        const tieneHorariosSemanales = Object.keys(horariosTemp).length > 0;
+        const tieneTurnosEspecificos = Object.keys(turnosEspecificosTemp).length > 0;
+        
+        if (!esSoloWhatsApp && tipoProfesional === 'periodico' && !tieneHorariosSemanales) {
+          alert('⚠️ Debes configurar horarios semanales para un profesional periódico');
+          return;
+        }
+        
+        if (!esSoloWhatsApp && tipoProfesional === 'esporadico' && !tieneTurnosEspecificos) {
+          alert('⚠️ Debes agregar al menos un turno en fecha específica para un profesional esporádico');
+          return;
+        }
+        
+        const profesional = {
+          nombre: nombre,
+          especialidad: especialidad,
+          telefono: telefono,
+          icono: document.querySelector('.icon-option.selected')?.dataset.icon || 'fa-stethoscope',
+          mensajesDirectos: mensajesDirectosTemp.filter(m => m && m.trim()),
+          mensajeBase: mensajesDirectosTemp.filter(m => m && m.trim())[0] || '', // Retrocompatibilidad
+          duracionTurno: parseInt(duracion) || 60,
+          tipoProfesional: tipoProfesional,
+          mostrarWhatsApp: document.getElementById('mostrar-whatsapp')?.checked !== false,
+          soloWhatsApp: document.getElementById('solo-whatsapp')?.checked === true,
+          
+          horarios: tipoProfesional === 'periodico' ? { ...horariosTemp } : {},
+          diasNoLaborables: [...excepcionesTemp],
+          turnosEspecificos: tipoProfesional === 'esporadico' ? { ...turnosEspecificosTemp } : {}
+        };
+
+        // Si estamos editando, pasar el ID del profesional
+        const profesionalId = editingProfesional?.id || null;
+        const result = await guardarProfesional(profesional, profesionalId);
+        
+        if (result) {
+          alert(`✅ Profesional ${editingProfesional ? 'actualizado' : 'guardado'} correctamente`);
+          
+          editingProfesional = null;
+          horariosTemp = {};
+          excepcionesTemp = [];
+          diasRapidosTemp = {};
+          turnosEspecificosTemp = {};
+          mensajesDirectosTemp = [];
+          
+          await cargarProfesionales();
+          switchTab('lista');
+        } else {
+          alert('❌ Error al guardar el profesional. Revisa la consola.');
+        }
+      } catch (error) {
+        console.error('Error guardando profesional:', error);
+        alert(`❌ Error al guardar: ${error.message}`);
+      }
+    }
+
+    function editarProfesional(id) {
+      editingProfesional = profesionales.find(p => p.id === id);
+      if (editingProfesional) {
+        inicializarHorarios();
+        switchTab('registro');
+      }
+    }
+
+    function cancelarEdicion() {
+      editingProfesional = null;
+      horariosTemp = {};
+      excepcionesTemp = [];
+      diasRapidosTemp = {};
+      turnosEspecificosTemp = {};
+      renderApp();
+    }
+
+    async function eliminarProfesional(id) {
+      if (!confirm('¿Estás seguro de eliminar este profesional? Esta acción no se puede deshacer.')) return;
+      
+      const result = await eliminarProfesionalDB(id);
+      if (result) {
+        await cargarProfesionales();
+        renderApp();
+      } else {
+        alert('Error al eliminar el profesional');
+      }
+    }
+
+    async function switchTab(tab) {
+      // Actualizar botones
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      // Activar tab seleccionado
+      const tabBtn = document.querySelector(`[onclick="switchTab('${tab}')"]`);
+      if (tabBtn) tabBtn.classList.add('active');
+      
+      const tabContent = document.getElementById(`tab-${tab}`);
+      if (tabContent) tabContent.classList.add('active');
+      
+      // Re-renderizar contenido del tab específico
+      if (tab === 'lista') {
+        // Recargar profesionales antes de mostrar la lista
+        await cargarProfesionales();
+        
+        const tabLista = document.getElementById('tab-lista');
+        if (tabLista) {
+          tabLista.innerHTML = renderListaProfesionales();
+        }
+        // Actualizar contador en el botón
+        const btnLista = document.querySelector(`[onclick="switchTab('lista')"]`);
+        if (btnLista) {
+          btnLista.innerHTML = `<i data-lucide="users"></i> Profesionales (${profesionales.length})`;
+        }
+      } else if (tab === 'registro') {
+        const tabRegistro = document.getElementById('tab-registro');
+        if (tabRegistro) {
+          tabRegistro.innerHTML = renderFormularioRegistro();
+          // Re-attach form event listener
+          const formProfesional = document.getElementById('form-profesional');
+          if (formProfesional) {
+            formProfesional.addEventListener('submit', handleGuardarProfesional);
+          }
+        }
+      }
+      
+      lucide.createIcons();
+    }
+
+    async function logout() {
+      await logoutFirebase();
+      currentUser = null;
+      editingProfesional = null;
+      horariosTemp = {};
+      excepcionesTemp = [];
+      renderApp();
+    }
+
+    // ========== FUNCIONES DEL MENÚ DESPLEGABLE ==========
+    function toggleMenuAcciones() {
+      const menu = document.getElementById('menu-acciones');
+      if (menu) {
+        menu.classList.toggle('active');
+      }
+    }
+
+    function cerrarMenuAcciones() {
+      const menu = document.getElementById('menu-acciones');
+      if (menu) {
+        menu.classList.remove('active');
+      }
+    }
+
+    // ========== RENDER PRINCIPAL ==========
+    async function renderApp() {
+      const container = document.getElementById('app-container');
+      
+      if (!currentUser) {
+        container.innerHTML = renderLogin();
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+          loginForm.addEventListener('submit', handleLogin);
+        }
+      } else {
+        // Inicializar horarios cuando mostramos el admin
+        inicializarHorarios();
+        
+        container.innerHTML = renderAdmin();
+        const formProfesional = document.getElementById('form-profesional');
+        if (formProfesional) {
+          formProfesional.addEventListener('submit', handleGuardarProfesional);
+        }
+
+        // Configurar evento para cerrar menú al hacer clic fuera
+        setTimeout(() => {
+          document.addEventListener('click', function(event) {
+            const menu = document.getElementById('menu-acciones');
+            const btnMenu = event.target.closest('.btn-menu');
+            if (menu && !btnMenu && !event.target.closest('.dropdown-menu')) {
+              menu.classList.remove('active');
+            }
+          }, { once: false });
+        }, 100);
+      }
+      
+      // Crear iconos al final
+      setTimeout(() => {
+        lucide.createIcons();
+      }, 100);
+    }
+
+    // ========== INICIALIZACIÓN ==========
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        await waitForFirebase();
+        if (!IS_PROD) console.log('✅ Firebase Admin listo');
+        
+        const { auth, onAuthStateChanged } = window.firebaseAdmin;
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            currentUser = user;
+            await cargarProfesionales();
+          } else {
+            currentUser = null;
+          }
+          renderApp();
+        });
+        
+      } catch (error) {
+        console.error('❌ Error inicializando admin:', error);
+        document.getElementById('app-container').innerHTML = `
+          <div style="text-align: center; padding: 3rem; background: white; border-radius: 20px; margin: 2rem;">
+            <h3 style="color: #ef4444; margin-bottom: 1rem;">Error de conexión</h3>
+            <p style="margin-bottom: 1.5rem;">No se pudo conectar con el servidor</p>
+            <button onclick="location.reload()" class="btn">Reintentar</button>
+          </div>
+        `;
+      }
+    });
+
+    // ========== GESTIÓN DE ADMINISTRADORES ==========
+    
+    // Cargar lista de administradores desde Firebase
+    async function cargarAdmins() {
+      try {
+        const { db, collection, getDocs } = window.firebaseAdmin;
+        const adminsCol = collection(db, 'administradores');
+        const snapshot = await getDocs(adminsCol);
+        return snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (error) {
+        console.error('❌ Error cargando administradores:', error);
+        return [];
+      }
+    }
+
+    // Agregar nuevo administrador
+    async function agregarAdmin() {
+      const emailInput = document.getElementById('nuevo-admin-email');
+      const passwordInput = document.getElementById('nuevo-admin-password');
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      // Validaciones
+      if (!email || !email.includes('@')) {
+        alert('Por favor ingresa un email válido');
+        return;
+      }
+
+      if (!password || password.length < 6) {
+        alert('La contraseña debe tener al menos 6 caracteres');
+        return;
+      }
+
+      try {
+        const { auth, db, collection, addDoc, query, where, getDocs, createUserWithEmailAndPassword } = window.firebaseAdmin;
+        
+        // Verificar que el email no exista ya en Firestore
+        const adminsCol = collection(db, 'administradores');
+        const q = query(adminsCol, where('email', '==', email));
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.docs.length > 0) {
+          alert('Este email ya está registrado como administrador');
+          return;
+        }
+
+        // Crear usuario en Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = userCredential.user.uid;
+
+        // Agregar nuevo administrador en Firestore
+        await addDoc(adminsCol, {
+          email: email,
+          uid: uid,
+          fechaAgregado: new Date(),
+          estado: 'activo'
+        });
+
+        alert(`✅ Administrador ${email} agregado exitosamente`);
+        emailInput.value = '';
+        passwordInput.value = '';
+        actualizarListaAdmins();
+      } catch (error) {
+        console.error('❌ Error al agregar administrador:', error);
+        
+        // Manejo de errores específicos de Firebase Auth
+        if (error.code === 'auth/email-already-in-use') {
+          alert('Este email ya está registrado en el sistema');
+        } else if (error.code === 'auth/weak-password') {
+          alert('La contraseña es muy débil. Por favor usa una más fuerte');
+        } else if (error.code === 'auth/invalid-email') {
+          alert('El email no es válido');
+        } else {
+          alert('Error al agregar el administrador: ' + error.message);
+        }
+      }
+    }
+
+    // Eliminar administrador
+    async function eliminarAdmin(adminId) {
+      if (!confirm('¿Estás seguro de que deseas eliminar este administrador?')) {
+        return;
+      }
+
+      try {
+        const { db, deleteDoc, doc } = window.firebaseAdmin;
+        await deleteDoc(doc(db, 'administradores', adminId));
+        alert('✅ Administrador eliminado correctamente');
+        actualizarListaAdmins();
+      } catch (error) {
+        console.error('❌ Error al eliminar administrador:', error);
+        alert('Error al eliminar el administrador');
+      }
+    }
+
+    // Actualizar lista de administradores en el modal
+    async function actualizarListaAdmins() {
+      const listaDiv = document.getElementById('lista-admins');
+      if (!listaDiv) return;
+
+      try {
+        const admins = await cargarAdmins();
+        
+        if (admins.length === 0) {
+          listaDiv.innerHTML = '<p style="text-align: center; color: #999;">No hay administradores registrados</p>';
+          return;
+        }
+
+        let html = '<div class="admin-list">';
+        admins.forEach(admin => {
+          html += `
+            <div class="admin-item">
+              <div class="admin-info">
+                <strong>${admin.email}</strong>
+                <small>Agregado: ${admin.fechaAgregado ? formatearFechaHora(admin.fechaAgregado) : 'Sin fecha'}</small>
+              </div>
+              <button class="btn-eliminar-admin" onclick="eliminarAdmin('${admin.id}')">
+                <i data-lucide="trash-2"></i> Eliminar
+              </button>
+            </div>
+          `;
+        });
+        html += '</div>';
+        
+        listaDiv.innerHTML = html;
+        lucide.createIcons();
+      } catch (error) {
+        console.error('Error al actualizar lista de administradores:', error);
+        listaDiv.innerHTML = '<p style="text-align: center; color: #f44;">Error al cargar administradores</p>';
+      }
+    }
+
+    // Abrir modal de gestión de administradores
+    function abrirModalGestorAdmins() {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.id = 'modal-gestor-admins';
+      modal.innerHTML = `
+        <div class="modal-content modal-admins">
+          <div class="modal-header">
+            <h2><i data-lucide="shield-plus"></i> Gestionar Administradores</h2>
+            <button class="modal-close" onclick="cerrarModalGestorAdmins()">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="admin-form-section">
+              <h3>Agregar nuevo administrador</h3>
+              <div class="admin-form">
+                <input type="email" id="nuevo-admin-email" placeholder="Email del nuevo administrador" />
+                <input type="password" id="nuevo-admin-password" placeholder="Contraseña" />
+                <button class="btn btn-agregar-admin" onclick="agregarAdmin()">
+                  <i data-lucide="plus"></i> Agregar
+                </button>
+              </div>
+            </div>
+
+            <div class="admin-list-section">
+              <h3>Administradores actuales</h3>
+              <div id="lista-admins" class="admin-list-container">
+                <p style="text-align: center;">Cargando...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          cerrarModalGestorAdmins();
+        }
+      });
+      
+      lucide.createIcons();
+      actualizarListaAdmins();
+    }
+
+    function cerrarModalGestorAdmins() {
+      const modal = document.getElementById('modal-gestor-admins');
+      if (modal) modal.remove();
+    }
+
+    // ========== FUNCIONES DE EXPORTACIÓN A EXCEL (MEJORADO) ==========
+    
+    // Variables globales para caché de datos
+    let cachedTurnos = null;
+    let cachedClientes = null;
+    let lastDataLoad = null;
+    const CACHE_DURATION = 60000; // 1 minuto
+    
+    // Cargar turnos desde Firebase con caché
+    async function cargarTurnos(forceReload = false) {
+      try {
+        if (!forceReload && cachedTurnos && lastDataLoad && (Date.now() - lastDataLoad < CACHE_DURATION)) {
+          return cachedTurnos;
+        }
+        const { db, collection, getDocs } = window.firebaseAdmin;
+        const turnosCol = collection(db, 'turnos');
+        const snapshot = await getDocs(turnosCol);
+        cachedTurnos = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        lastDataLoad = Date.now();
+        return cachedTurnos;
+      } catch (error) {
+        console.error('❌ Error cargando turnos:', error);
+        return [];
+      }
+    }
+
+    // Cargar clientes desde Firebase con caché
+    async function cargarClientes(forceReload = false) {
+      try {
+        if (!forceReload && cachedClientes && lastDataLoad && (Date.now() - lastDataLoad < CACHE_DURATION)) {
+          return cachedClientes;
+        }
+        const { db, collection, getDocs } = window.firebaseAdmin;
+        const clientesCol = collection(db, 'clientes');
+        const snapshot = await getDocs(clientesCol);
+        cachedClientes = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        return cachedClientes;
+      } catch (error) {
+        console.error('❌ Error cargando clientes:', error);
+        return [];
+      }
+    }
+
+    // Obtener estadísticas para vista previa
+    async function obtenerEstadisticasExportacion(filtros = {}) {
+      const turnos = await cargarTurnos();
+      const clientes = await cargarClientes();
+      const listaProfesionales = window.profesionales || profesionales || [];
+      
+      let turnosFiltrados = [...turnos];
+      
+      if (filtros.profesionalId) {
+        turnosFiltrados = turnosFiltrados.filter(t => t.profesionalId === filtros.profesionalId);
+      }
+      if (filtros.fechaDesde) {
+        turnosFiltrados = turnosFiltrados.filter(t => t.fecha >= filtros.fechaDesde);
+      }
+      if (filtros.fechaHasta) {
+        turnosFiltrados = turnosFiltrados.filter(t => t.fecha <= filtros.fechaHasta);
+      }
+      if (filtros.estado && filtros.estado !== 'todos') {
+        turnosFiltrados = turnosFiltrados.filter(t => t.estado === filtros.estado);
+      }
+      
+      const turnosConfirmados = turnosFiltrados.filter(t => t.estado === 'confirmado').length;
+      const turnosCancelados = turnosFiltrados.filter(t => t.estado === 'cancelado').length;
+      const turnosPendientes = turnosFiltrados.filter(t => !t.estado || t.estado === 'pendiente').length;
+      
+      // Clientes únicos en los turnos filtrados
+      const clientesUnicos = new Set(turnosFiltrados.map(t => t.documento || t.telefonoCliente));
+      
+      return {
+        totalTurnos: turnosFiltrados.length,
+        turnosConfirmados,
+        turnosCancelados,
+        turnosPendientes,
+        totalProfesionales: listaProfesionales.length,
+        totalClientes: clientes.length,
+        clientesEnFiltro: clientesUnicos.size
+      };
+    }
+
+    // Abrir modal de exportación mejorado
+    async function abrirModalExportar() {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.id = 'modal-exportar';
+      
+      // Generar opciones de profesionales
+      let opcionesProfesionales = '<option value="">👥 Todos los profesionales</option>';
+      let listaProfesionales = window.profesionales || profesionales || [];
+      if (Array.isArray(listaProfesionales) && listaProfesionales.length > 0) {
+        listaProfesionales.forEach(p => {
+          opcionesProfesionales += `<option value="${p.id}">👤 ${p.nombre} - ${p.especialidad || 'Sin especialidad'}</option>`;
+        });
+      }
+      
+      // Fechas por defecto: último mes hasta hoy
+      const hoy = new Date();
+      const hace30Dias = new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const fechaHastaDefault = hoy.toISOString().split('T')[0];
+      const fechaDesdeDefault = hace30Dias.toISOString().split('T')[0];
+      
+      modal.innerHTML = `
+        <div class="modal-content modal-exportar-mejorado">
+          <div class="modal-header modal-header-exportar">
+            <div class="modal-header-icon">
+              <i data-lucide="file-spreadsheet"></i>
+            </div>
+            <div class="modal-header-text">
+              <h2>Centro de Exportación</h2>
+              <p>Generá reportes personalizados en Excel</p>
+            </div>
+            <button class="modal-close" onclick="cerrarModalExportar()">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+          
+          <!-- Panel de Filtros -->
+          <div class="export-panel-filtros">
+            <div class="filtros-titulo">
+              <i data-lucide="filter"></i>
+              <span>Filtros de exportación</span>
+              <button type="button" class="btn-limpiar-filtros" onclick="limpiarFiltrosExportacion()">
+                <i data-lucide="refresh-ccw"></i> Limpiar
+              </button>
+            </div>
+            
+            <div class="filtros-grid">
+              <div class="filtro-grupo">
+                <label for="filtro-profesional">
+                  <i data-lucide="user"></i> Profesional
+                </label>
+                <select id="filtro-profesional" onchange="actualizarVistaPrevia()">
+                  ${opcionesProfesionales}
+                </select>
+              </div>
+              
+              <div class="filtro-grupo">
+                <label for="filtro-fecha-desde">
+                  <i data-lucide="calendar"></i> Desde
+                </label>
+                <input type="date" id="filtro-fecha-desde" value="${fechaDesdeDefault}" onchange="actualizarVistaPrevia()">
+              </div>
+              
+              <div class="filtro-grupo">
+                <label for="filtro-fecha-hasta">
+                  <i data-lucide="calendar-check"></i> Hasta
+                </label>
+                <input type="date" id="filtro-fecha-hasta" value="${fechaHastaDefault}" onchange="actualizarVistaPrevia()">
+              </div>
+              
+              <div class="filtro-grupo">
+                <label for="filtro-estado">
+                  <i data-lucide="activity"></i> Estado
+                </label>
+                <select id="filtro-estado" onchange="actualizarVistaPrevia()">
+                  <option value="todos">📊 Todos los estados</option>
+                  <option value="confirmado">✅ Confirmados</option>
+                  <option value="cancelado">❌ Cancelados</option>
+                  <option value="pendiente">⏳ Pendientes</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- Accesos rápidos de fechas -->
+            <div class="filtros-rapidos">
+              <span>Período rápido:</span>
+              <button type="button" onclick="setFiltroRapido('hoy')">Hoy</button>
+              <button type="button" onclick="setFiltroRapido('semana')">Esta semana</button>
+              <button type="button" onclick="setFiltroRapido('mes')">Este mes</button>
+              <button type="button" onclick="setFiltroRapido('trimestre')">Último trimestre</button>
+              <button type="button" onclick="setFiltroRapido('anio')">Este año</button>
+            </div>
+          </div>
+          
+          <!-- Vista previa / Estadísticas -->
+          <div class="export-vista-previa" id="export-vista-previa">
+            <div class="vista-previa-loading">
+              <i data-lucide="loader-circle" class="spin"></i>
+              <span>Calculando datos...</span>
+            </div>
+          </div>
+          
+          <!-- Opciones de Exportación -->
+          <div class="export-section-titulo">
+            <i data-lucide="download"></i>
+            <span>Seleccioná qué exportar</span>
+          </div>
+          
+          <div class="export-options-grid">
+            <div class="export-card" onclick="exportarTurnos()">
+              <div class="export-card-icon turnos">
+                <i data-lucide="calendar-check"></i>
+              </div>
+              <div class="export-card-content">
+                <h4>Turnos</h4>
+                <p>Historial de citas y reservas</p>
+              </div>
+              <div class="export-card-badge" id="badge-turnos">-</div>
+            </div>
+            
+            <div class="export-card" onclick="exportarProfesionales()">
+              <div class="export-card-icon profesionales">
+                <i data-lucide="users"></i>
+              </div>
+              <div class="export-card-content">
+                <h4>Profesionales</h4>
+                <p>Listado con horarios y datos</p>
+              </div>
+              <div class="export-card-badge" id="badge-profesionales">-</div>
+            </div>
+            
+            <div class="export-card" onclick="exportarClientes()">
+              <div class="export-card-icon clientes">
+                <i data-lucide="user-check"></i>
+              </div>
+              <div class="export-card-content">
+                <h4>Clientes</h4>
+                <p>Base de pacientes registrados</p>
+              </div>
+              <div class="export-card-badge" id="badge-clientes">-</div>
+            </div>
+            
+            <div class="export-card destacado" onclick="exportarTodo()">
+              <div class="export-card-icon completo">
+                <i data-lucide="package"></i>
+              </div>
+              <div class="export-card-content">
+                <h4>Reporte Completo</h4>
+                <p>Todo en un archivo Excel</p>
+              </div>
+              <div class="export-card-arrow">
+                <i data-lucide="arrow-right"></i>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Exportación rápida de profesional -->
+          <div class="export-profesional-rapido" id="export-profesional-rapido" style="display: none;">
+            <div class="profesional-rapido-info">
+              <i data-lucide="user-circle"></i>
+              <span id="profesional-rapido-nombre">Profesional seleccionado</span>
+            </div>
+            <button type="button" class="btn-export-profesional" onclick="exportarSoloProfesionalSeleccionado()">
+              <i data-lucide="file-down"></i>
+              Exportar ficha completa
+            </button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Cerrar al hacer clic fuera del modal
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) cerrarModalExportar();
+      });
+      
+      // Cerrar con ESC
+      document.addEventListener('keydown', function escHandler(e) {
+        if (e.key === 'Escape') {
+          cerrarModalExportar();
+          document.removeEventListener('keydown', escHandler);
+        }
+      });
+      
+      lucide.createIcons();
+      
+      // Cargar vista previa inicial
+      await actualizarVistaPrevia();
+    }
+    
+    // Actualizar vista previa con estadísticas
+    async function actualizarVistaPrevia() {
+      const vistaPrevia = document.getElementById('export-vista-previa');
+      if (!vistaPrevia) return;
+      
+      vistaPrevia.innerHTML = `
+        <div class="vista-previa-loading">
+          <i data-lucide="loader-circle" class="spin"></i>
+          <span>Calculando datos...</span>
+        </div>
+      `;
+      lucide.createIcons();
+      
+      const filtros = obtenerFiltrosActuales();
+      const stats = await obtenerEstadisticasExportacion(filtros);
+      
+      vistaPrevia.innerHTML = `
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon turnos"><i data-lucide="calendar-check"></i></div>
+            <div class="stat-info">
+              <span class="stat-numero">${stats.totalTurnos}</span>
+              <span class="stat-label">Turnos</span>
+            </div>
+            <div class="stat-desglose">
+              <span class="stat-confirmado">✅ ${stats.turnosConfirmados}</span>
+              <span class="stat-cancelado">❌ ${stats.turnosCancelados}</span>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon profesionales"><i data-lucide="users"></i></div>
+            <div class="stat-info">
+              <span class="stat-numero">${stats.totalProfesionales}</span>
+              <span class="stat-label">Profesionales</span>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon clientes"><i data-lucide="user-check"></i></div>
+            <div class="stat-info">
+              <span class="stat-numero">${stats.clientesEnFiltro}</span>
+              <span class="stat-label">Clientes únicos</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="filtros-aplicados">
+          ${filtros.profesionalId ? `<span class="filtro-tag"><i data-lucide="user"></i> ${obtenerNombreProfesional(filtros.profesionalId)}</span>` : ''}
+          ${filtros.fechaDesde ? `<span class="filtro-tag"><i data-lucide="calendar"></i> Desde: ${formatearFecha(filtros.fechaDesde)}</span>` : ''}
+          ${filtros.fechaHasta ? `<span class="filtro-tag"><i data-lucide="calendar"></i> Hasta: ${formatearFecha(filtros.fechaHasta)}</span>` : ''}
+          ${filtros.estado && filtros.estado !== 'todos' ? `<span class="filtro-tag"><i data-lucide="activity"></i> ${filtros.estado}</span>` : ''}
+        </div>
+      `;
+      
+      // Actualizar badges
+      document.getElementById('badge-turnos').textContent = stats.totalTurnos;
+      document.getElementById('badge-profesionales').textContent = stats.totalProfesionales;
+      document.getElementById('badge-clientes').textContent = stats.clientesEnFiltro;
+      
+      // Mostrar/ocultar exportación rápida de profesional
+      const exportRapido = document.getElementById('export-profesional-rapido');
+      if (filtros.profesionalId && exportRapido) {
+        exportRapido.style.display = 'flex';
+        document.getElementById('profesional-rapido-nombre').textContent = obtenerNombreProfesional(filtros.profesionalId);
+      } else if (exportRapido) {
+        exportRapido.style.display = 'none';
+      }
+      
+      lucide.createIcons();
+    }
+    
+    // Obtener nombre de profesional por ID
+    function obtenerNombreProfesional(id) {
+      const listaProfesionales = window.profesionales || profesionales || [];
+      const prof = listaProfesionales.find(p => p.id === id);
+      return prof ? prof.nombre : id;
+    }
+    
+    // Obtener filtros actuales del modal
+    function obtenerFiltrosActuales() {
+      return {
+        profesionalId: document.getElementById('filtro-profesional')?.value || '',
+        fechaDesde: document.getElementById('filtro-fecha-desde')?.value || '',
+        fechaHasta: document.getElementById('filtro-fecha-hasta')?.value || '',
+        estado: document.getElementById('filtro-estado')?.value || 'todos'
+      };
+    }
+    
+    // Setear filtro rápido de fechas
+    function setFiltroRapido(periodo) {
+      const hoy = new Date();
+      let fechaDesde, fechaHasta;
+      
+      fechaHasta = hoy.toISOString().split('T')[0];
+      
+      switch(periodo) {
+        case 'hoy':
+          fechaDesde = fechaHasta;
+          break;
+        case 'semana':
+          const inicioSemana = new Date(hoy);
+          inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+          fechaDesde = inicioSemana.toISOString().split('T')[0];
+          break;
+        case 'mes':
+          fechaDesde = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+          break;
+        case 'trimestre':
+          fechaDesde = new Date(hoy.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          break;
+        case 'anio':
+          fechaDesde = new Date(hoy.getFullYear(), 0, 1).toISOString().split('T')[0];
+          break;
+        default:
+          fechaDesde = new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      }
+      
+      document.getElementById('filtro-fecha-desde').value = fechaDesde;
+      document.getElementById('filtro-fecha-hasta').value = fechaHasta;
+      
+      actualizarVistaPrevia();
+    }
+    
+    // Limpiar filtros
+    function limpiarFiltrosExportacion() {
+      document.getElementById('filtro-profesional').value = '';
+      document.getElementById('filtro-fecha-desde').value = '';
+      document.getElementById('filtro-fecha-hasta').value = '';
+      document.getElementById('filtro-estado').value = 'todos';
+      actualizarVistaPrevia();
+    }
+
+    function cerrarModalExportar() {
+      const modal = document.getElementById('modal-exportar');
+      if (modal) modal.remove();
+    }
+    
+    // Mostrar notificación de exportación
+    function mostrarNotificacionExportacion(mensaje, tipo = 'success') {
+      const notif = document.createElement('div');
+      notif.className = `export-notificacion ${tipo}`;
+      notif.innerHTML = `
+        <i data-lucide="${tipo === 'success' ? 'check-circle' : tipo === 'error' ? 'x-circle' : 'info'}"></i>
+        <span>${mensaje}</span>
+      `;
+      document.body.appendChild(notif);
+      lucide.createIcons();
+      
+      setTimeout(() => notif.classList.add('show'), 10);
+      setTimeout(() => {
+        notif.classList.remove('show');
+        setTimeout(() => notif.remove(), 300);
+      }, 3000);
+    }
+
+    // Exportar solo el profesional seleccionado (mejorado)
+    window.exportarSoloProfesionalSeleccionado = async function exportarSoloProfesionalSeleccionado() {
+      const profesionalId = document.getElementById('filtro-profesional')?.value || '';
+      if (!profesionalId) {
+        mostrarNotificacionExportacion('Seleccioná un profesional primero', 'warning');
+        return;
+      }
+      var listaProfesionales = window.profesionales || profesionales || [];
+      var profesional = null;
+      for (var i = 0; i < listaProfesionales.length; i++) {
+          if (listaProfesionales[i].id === profesionalId) {
+            profesional = listaProfesionales[i];
+            break;
+          }
+        }
+        if (!profesional) {
+          alert('Profesional no encontrado.');
+          return;
+        }
+        // Formatear horarios por día
+        var diasNombre = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        var horariosFormateados = '';
+        var horariosArr = [];
+        if (profesional.horarios) {
+          for (var key in profesional.horarios) {
+            if (profesional.horarios.hasOwnProperty(key)) {
+              horariosArr.push(diasNombre[key] + ': ' + profesional.horarios[key].join(', '));
+            }
+          }
+          horariosFormateados = horariosArr.join(' | ');
+        }
+        var diasNoLaborables = '';
+        if (profesional.diasNoLaborables && profesional.diasNoLaborables.length > 0) {
+          var diasArr = [];
+          for (var j = 0; j < profesional.diasNoLaborables.length; j++) {
+            diasArr.push(formatearFecha(profesional.diasNoLaborables[j]));
+          }
+          diasNoLaborables = diasArr.join(', ');
+        } else {
+          diasNoLaborables = 'Ninguno';
+        }
+        var datos = [{
+          'Nombre': profesional.nombre || '',
+          'Especialidad': profesional.especialidad || '',
+          'Teléfono': profesional.telefono || '',
+          'Duración Turno (min)': profesional.duracionTurno || 60,
+          'Horarios': horariosFormateados || 'Sin horarios',
+          'Días No Laborables': diasNoLaborables,
+          'Mensaje WhatsApp': profesional.mensajeBase || ''
+        }];
+        var wb = XLSX.utils.book_new();
+        var ws = XLSX.utils.json_to_sheet(datos);
+        ws['!cols'] = [
+          { wch: 25 }, // Nombre
+          { wch: 25 }, // Especialidad
+          { wch: 15 }, // Teléfono
+          { wch: 18 }, // Duración
+          { wch: 60 }, // Horarios
+          { wch: 30 }, // Días no laborables
+          { wch: 50 }  // Mensaje
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, 'Profesional');
+        // Además, cargar movimientos (turnos) del profesional y añadirlos en una hoja separada
+        try {
+          const turnos = await cargarTurnos();
+          const clientes = await cargarClientes();
+          if (!IS_PROD) console.log('Total turnos en DB:', (turnos || []).length);
+          if (!IS_PROD) console.log('Total clientes en DB:', (clientes || []).length);
+          // Aplicar filtros de fecha si existen
+          const fechaDesde = document.getElementById('filtro-fecha-desde')?.value;
+          const fechaHasta = document.getElementById('filtro-fecha-hasta')?.value;
+          let turnosFiltrados = (turnos || []).filter(t => t.profesionalId === profesionalId);
+          if (!IS_PROD) console.log('Turnos que coinciden con profesionalId', profesionalId, ':', turnosFiltrados.length);
+          if (fechaDesde) turnosFiltrados = turnosFiltrados.filter(t => t.fecha >= fechaDesde);
+          if (fechaHasta) turnosFiltrados = turnosFiltrados.filter(t => t.fecha <= fechaHasta);
+          if (!IS_PROD) console.log('Turnos tras aplicar rango de fechas:', turnosFiltrados.length, 'Ejemplos:', (turnosFiltrados || []).slice(0,5));
+
+          const datosMovimientos = turnosFiltrados.map(t => {
+            const cliente = (clientes || []).find(c => c.id === (t.clienteId || t.cliente || t.nombreCliente)) || (clientes || []).find(c => c.telefono === (t.telefonoCliente || t.clienteTelefono || t.telefono));
+            const documento = cliente?.dni || cliente?.documento || t.clienteDni || t.dni || t.documento || '';
+            const nombreCliente = t.nombreCliente || t.clienteNombre || t.cliente || cliente?.nombre || '';
+            return {
+              'Fecha': t.fecha || '',
+              'Hora': t.hora || '',
+              'Cliente': nombreCliente,
+              'Documento': documento,
+              'Teléfono': t.telefonoCliente || t.clienteTelefono || t.telefono || cliente?.telefono || '',
+              'Estado': t.estado || 'Pendiente',
+              'Fecha Reserva': t.fechaReserva ? formatearFechaHora(t.fechaReserva) : '',
+              'Notas': t.notas || ''
+            };
+          }).sort((a,b) => (a['Fecha'] + ' ' + a['Hora']).localeCompare(b['Fecha'] + ' ' + b['Hora']));
+
+          if (!IS_PROD) console.log('Movimientos encontrados:', datosMovimientos.length);
+          if (datosMovimientos.length > 0) {
+            const wsMov = XLSX.utils.json_to_sheet(datosMovimientos);
+            wsMov['!cols'] = [ { wch: 12 }, { wch: 8 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 18 }, { wch: 30 } ];
+            XLSX.utils.book_append_sheet(wb, wsMov, 'Movimientos');
+          } else {
+            // Crear hoja vacía con encabezados para que siempre aparezca la pestaña
+            const headers = ['Fecha','Hora','Cliente','Documento','Teléfono','Estado','Fecha Reserva','Notas'];
+            const aoa = [headers, ['No hay movimientos','','','','','','','']];
+            const wsEmpty = XLSX.utils.aoa_to_sheet(aoa);
+            wsEmpty['!cols'] = [ { wch: 12 }, { wch: 8 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 18 }, { wch: 30 } ];
+            XLSX.utils.book_append_sheet(wb, wsEmpty, 'Movimientos');
+          }
+        } catch (e) {
+          console.error('Error cargando movimientos para exportar profesional:', e);
+        }
+        var nombreArchivo = 'Movement_Profesional_' + (profesional.nombre ? profesional.nombre.replace(/\s+/g,'_') : profesionalId) + '_' + obtenerFechaArchivo() + '.xlsx';
+        XLSX.writeFile(wb, nombreArchivo);
+        cerrarModalExportar();
+        mostrarNotificacionExportacion(`Ficha de ${profesional.nombre} exportada correctamente`);
+      }
+
+    // Exportar Profesionales (mejorado)
+    async function exportarProfesionales() {
+      try {
+        if (profesionales.length === 0) {
+          mostrarNotificacionExportacion('No hay profesionales para exportar', 'warning');
+          return;
+        }
+
+        const diasNombre = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        
+        const datos = profesionales.map(p => {
+          // Formatear horarios por día
+          const horariosFormateados = Object.entries(p.horarios || {}).map(([dia, horas]) => {
+            return `${diasNombre[dia]}: ${horas.join(', ')}`;
+          }).join(' | ');
+          
+          // Formatear turnos específicos
+          const turnosEspecificosFormateados = Object.entries(p.turnosEspecificos || {}).map(([fecha, horas]) => {
+            return `${formatearFecha(fecha)}: ${horas.join(', ')}`;
+          }).join(' | ');
+          
+          return {
+            'Nombre': p.nombre || '',
+            'Especialidad': p.especialidad || '',
+            'Teléfono': p.telefono || '',
+            'Tipo': p.tipoProfesional === 'esporadico' ? 'Esporádico' : 'Periódico',
+            'Duración Turno (min)': p.duracionTurno || 60,
+            'Horarios Semanales': horariosFormateados || 'Sin horarios',
+            'Turnos Específicos': turnosEspecificosFormateados || 'Ninguno',
+            'Días No Laborables': (p.diasNoLaborables || []).map(f => formatearFecha(f)).join(', ') || 'Ninguno',
+            'Mensaje WhatsApp': p.mensajeBase || ''
+          };
+        });
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(datos);
+        
+        // Ajustar anchos de columna
+        ws['!cols'] = [
+          { wch: 25 }, // Nombre
+          { wch: 25 }, // Especialidad
+          { wch: 15 }, // Teléfono
+          { wch: 12 }, // Tipo
+          { wch: 18 }, // Duración
+          { wch: 60 }, // Horarios Semanales
+          { wch: 60 }, // Turnos Específicos
+          { wch: 30 }, // Días no laborables
+          { wch: 50 }  // Mensaje
+        ];
+        
+        XLSX.utils.book_append_sheet(wb, ws, 'Profesionales');
+        XLSX.writeFile(wb, `Movement_Profesionales_${obtenerFechaArchivo()}.xlsx`);
+        
+        cerrarModalExportar();
+        mostrarNotificacionExportacion(`${profesionales.length} profesionales exportados correctamente`);
+      } catch (error) {
+        console.error('Error exportando profesionales:', error);
+        mostrarNotificacionExportacion('Error al exportar profesionales', 'error');
+      }
+    }
+
+    // Exportar Clientes (mejorado)
+    async function exportarClientes() {
+      try {
+        const clientes = await cargarClientes();
+        if (clientes.length === 0) {
+          mostrarNotificacionExportacion('No hay clientes registrados para exportar', 'warning');
+          return;
+        }
+        // Filtros
+        const filtros = obtenerFiltrosActuales();
+        let clientesFiltrados = clientes;
+        
+        if (filtros.profesionalId) {
+          // Buscar solo clientes que tengan turnos con ese profesional
+          const turnos = await cargarTurnos();
+          const clientesIds = new Set(
+            turnos.filter(t => t.profesionalId === filtros.profesionalId)
+              .filter(t => {
+                if (filtros.fechaDesde && t.fecha < filtros.fechaDesde) return false;
+                if (filtros.fechaHasta && t.fecha > filtros.fechaHasta) return false;
+                return true;
+              })
+              .map(t => t.clienteId || t.cliente || t.nombreCliente || t.clienteNombre || t.telefono || t.telefonoCliente || t.clienteTelefono || t.documento)
+          );
+          clientesFiltrados = clientes.filter(c => clientesIds.has(c.id) || clientesIds.has(c.nombre) || clientesIds.has(c.telefono));
+        }
+        
+        const datos = clientesFiltrados.map(c => ({
+          'Nombre': c.nombre || '',
+          'Teléfono': c.telefono || '',
+          'Email': c.email || '',
+          'DNI': c.dni || '',
+          'Fecha Registro': c.fechaRegistro ? formatearFechaHora(c.fechaRegistro) : '',
+          'Notas': c.notas || ''
+        }));
+        
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(datos);
+        ws['!cols'] = [
+          { wch: 30 }, // Nombre
+          { wch: 15 }, // Teléfono
+          { wch: 30 }, // Email
+          { wch: 15 }, // DNI
+          { wch: 20 }, // Fecha registro
+          { wch: 40 }  // Notas
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
+        XLSX.writeFile(wb, `Movement_Clientes_${obtenerFechaArchivo()}.xlsx`);
+        
+        cerrarModalExportar();
+        mostrarNotificacionExportacion(`${clientesFiltrados.length} clientes exportados correctamente`);
+      } catch (error) {
+        console.error('Error exportando clientes:', error);
+        mostrarNotificacionExportacion('Error al exportar clientes', 'error');
+      }
+    }
+
+    // Exportar Turnos (mejorado)
+    async function exportarTurnos() {
+      try {
+        const turnos = await cargarTurnos();
+        if (turnos.length === 0) {
+          mostrarNotificacionExportacion('No hay turnos registrados para exportar', 'warning');
+          return;
+        }
+        // Filtros
+        const filtros = obtenerFiltrosActuales();
+        let turnosFiltrados = turnos;
+        
+        if (filtros.profesionalId) {
+          turnosFiltrados = turnosFiltrados.filter(t => t.profesionalId === filtros.profesionalId);
+        }
+        if (filtros.fechaDesde) {
+          turnosFiltrados = turnosFiltrados.filter(t => t.fecha >= filtros.fechaDesde);
+        }
+        if (filtros.fechaHasta) {
+          turnosFiltrados = turnosFiltrados.filter(t => t.fecha <= filtros.fechaHasta);
+        }
+        if (filtros.estado && filtros.estado !== 'todos') {
+          turnosFiltrados = turnosFiltrados.filter(t => t.estado === filtros.estado);
+        }
+        
+        if (turnosFiltrados.length === 0) {
+          mostrarNotificacionExportacion('No hay turnos con los filtros aplicados', 'warning');
+          return;
+        }
+        
+        const datos = turnosFiltrados.map(t => {
+          // Buscar nombre del profesional
+          const profesional = profesionales.find(p => p.id === t.profesionalId);
+          const nombreCliente = t.nombreCliente || t.clienteNombre || t.cliente || '';
+          const telefonoCliente = t.telefonoCliente || t.clienteTelefono || t.telefono || '';
+          return {
+            'Fecha': t.fecha || '',
+            'Hora': t.hora || '',
+            'Profesional': profesional?.nombre || t.profesionalNombre || t.profesionalId || '',
+            'Especialidad': profesional?.especialidad || t.especialidad || '',
+            'Cliente': nombreCliente,
+            'Documento': t.documento || '',
+            'Teléfono Cliente': telefonoCliente,
+            'Email': t.email || '',
+            'Estado': t.estado === 'confirmado' ? '✅ Confirmado' : t.estado === 'cancelado' ? '❌ Cancelado' : '⏳ Pendiente',
+            'Fecha Reserva': t.timestampReserva ? formatearFechaHora(t.timestampReserva) : (t.fechaReserva ? formatearFechaHora(t.fechaReserva) : ''),
+            'Notas': t.notas || ''
+          };
+        });
+        // Ordenar por fecha y hora
+        datos.sort((a, b) => {
+          const fechaA = a['Fecha'] + ' ' + a['Hora'];
+          const fechaB = b['Fecha'] + ' ' + b['Hora'];
+          return fechaA.localeCompare(fechaB);
+        });
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(datos);
+        ws['!cols'] = [
+          { wch: 12 }, // Fecha
+          { wch: 8 },  // Hora
+          { wch: 25 }, // Profesional
+          { wch: 25 }, // Especialidad
+          { wch: 25 }, // Cliente
+          { wch: 12 }, // Documento
+          { wch: 15 }, // Teléfono
+          { wch: 25 }, // Email
+          { wch: 15 }, // Estado
+          { wch: 18 }, // Fecha reserva
+          { wch: 30 }  // Notas
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, 'Turnos');
+        XLSX.writeFile(wb, `Movement_Turnos_${obtenerFechaArchivo()}.xlsx`);
+        
+        cerrarModalExportar();
+        mostrarNotificacionExportacion(`${turnosFiltrados.length} turnos exportados correctamente`);
+      } catch (error) {
+        console.error('Error exportando turnos:', error);
+        mostrarNotificacionExportacion('Error al exportar turnos', 'error');
+      }
+    }
+
+    // Exportar Todo (mejorado)
+    async function exportarTodo() {
+      try {
+        const [turnos, clientes] = await Promise.all([
+          cargarTurnos(),
+          cargarClientes()
+        ]);
+        // Filtros
+        const filtros = obtenerFiltrosActuales();
+        let turnosFiltrados = turnos;
+        
+        if (filtros.profesionalId) {
+          turnosFiltrados = turnosFiltrados.filter(t => t.profesionalId === filtros.profesionalId);
+        }
+        if (filtros.fechaDesde) {
+          turnosFiltrados = turnosFiltrados.filter(t => t.fecha >= filtros.fechaDesde);
+        }
+        if (filtros.fechaHasta) {
+          turnosFiltrados = turnosFiltrados.filter(t => t.fecha <= filtros.fechaHasta);
+        }
+        if (filtros.estado && filtros.estado !== 'todos') {
+          turnosFiltrados = turnosFiltrados.filter(t => t.estado === filtros.estado);
+        }
+        
+        let clientesFiltrados = clientes;
+        if (filtros.profesionalId) {
+          const clientesIds = new Set(
+            turnosFiltrados.map(t => t.clienteId || t.cliente || t.nombreCliente || t.clienteNombre || t.telefono || t.telefonoCliente || t.clienteTelefono || t.documento)
+          );
+          clientesFiltrados = clientes.filter(c => clientesIds.has(c.id) || clientesIds.has(c.nombre) || clientesIds.has(c.telefono));
+        }
+        
+        const wb = XLSX.utils.book_new();
+        const diasNombre = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        
+        // Hoja de Resumen
+        const resumenData = [
+          { 'Concepto': '📊 RESUMEN DEL REPORTE', 'Valor': '' },
+          { 'Concepto': 'Fecha de generación', 'Valor': new Date().toLocaleString('es-AR') },
+          { 'Concepto': '', 'Valor': '' },
+          { 'Concepto': 'Total Profesionales', 'Valor': profesionales.length },
+          { 'Concepto': 'Total Turnos (filtrados)', 'Valor': turnosFiltrados.length },
+          { 'Concepto': '  - Confirmados', 'Valor': turnosFiltrados.filter(t => t.estado === 'confirmado').length },
+          { 'Concepto': '  - Cancelados', 'Valor': turnosFiltrados.filter(t => t.estado === 'cancelado').length },
+          { 'Concepto': 'Clientes únicos', 'Valor': clientesFiltrados.length },
+          { 'Concepto': '', 'Valor': '' },
+          { 'Concepto': '🔍 FILTROS APLICADOS', 'Valor': '' },
+          { 'Concepto': 'Profesional', 'Valor': filtros.profesionalId ? obtenerNombreProfesional(filtros.profesionalId) : 'Todos' },
+          { 'Concepto': 'Fecha desde', 'Valor': filtros.fechaDesde ? formatearFecha(filtros.fechaDesde) : 'Sin límite' },
+          { 'Concepto': 'Fecha hasta', 'Valor': filtros.fechaHasta ? formatearFecha(filtros.fechaHasta) : 'Sin límite' },
+          { 'Concepto': 'Estado', 'Valor': filtros.estado === 'todos' ? 'Todos' : filtros.estado }
+        ];
+        const wsResumen = XLSX.utils.json_to_sheet(resumenData);
+        wsResumen['!cols'] = [{ wch: 25 }, { wch: 35 }];
+        XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
+        
+        // Hoja de Profesionales
+        if (profesionales.length > 0) {
+          const datosProfesionales = profesionales.map(p => {
+            const horariosFormateados = Object.entries(p.horarios || {}).map(([dia, horas]) => {
+              return `${diasNombre[dia]}: ${horas.join(', ')}`;
+            }).join(' | ');
+            return {
+              'Nombre': p.nombre || '',
+              'Especialidad': p.especialidad || '',
+              'Teléfono': p.telefono || '',
+              'Tipo': p.tipoProfesional === 'esporadico' ? 'Esporádico' : 'Periódico',
+              'Duración Turno (min)': p.duracionTurno || 60,
+              'Horarios': horariosFormateados || 'Sin horarios',
+              'Días No Laborables': (p.diasNoLaborables || []).map(f => formatearFecha(f)).join(', ') || 'Ninguno'
+            };
+          });
+          const wsProfesionales = XLSX.utils.json_to_sheet(datosProfesionales);
+          wsProfesionales['!cols'] = [{ wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 18 }, { wch: 60 }, { wch: 30 }];
+          XLSX.utils.book_append_sheet(wb, wsProfesionales, 'Profesionales');
+        }
+        
+        // Hoja de Clientes
+        if (clientesFiltrados.length > 0) {
+          const datosClientes = clientesFiltrados.map(c => ({
+            'Nombre': c.nombre || '',
+            'Teléfono': c.telefono || '',
+            'Email': c.email || '',
+            'DNI': c.dni || '',
+            'Fecha Registro': c.fechaRegistro ? formatearFechaHora(c.fechaRegistro) : ''
+          }));
+          const wsClientes = XLSX.utils.json_to_sheet(datosClientes);
+          wsClientes['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 20 }];
+          XLSX.utils.book_append_sheet(wb, wsClientes, 'Clientes');
+        }
+        
+        // Hoja de Turnos
+        if (turnosFiltrados.length > 0) {
+          const datosTurnos = turnosFiltrados.map(t => {
+            const profesional = profesionales.find(p => p.id === t.profesionalId);
+            const nombreCliente = t.nombreCliente || t.clienteNombre || t.cliente || '';
+            const telefonoCliente = t.telefonoCliente || t.clienteTelefono || t.telefono || '';
+            return {
+              'Fecha': t.fecha || '',
+              'Hora': t.hora || '',
+              'Profesional': profesional?.nombre || t.profesionalNombre || '',
+              'Cliente': nombreCliente,
+              'Documento': t.documento || '',
+              'Teléfono': telefonoCliente,
+              'Estado': t.estado === 'confirmado' ? '✅ Confirmado' : t.estado === 'cancelado' ? '❌ Cancelado' : '⏳ Pendiente'
+            };
+          }).sort((a, b) => {
+            const fechaA = a['Fecha'] + ' ' + a['Hora'];
+            const fechaB = b['Fecha'] + ' ' + b['Hora'];
+            return fechaA.localeCompare(fechaB);
+          });
+          const wsTurnos = XLSX.utils.json_to_sheet(datosTurnos);
+          wsTurnos['!cols'] = [{ wch: 12 }, { wch: 8 }, { wch: 25 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 15 }];
+          XLSX.utils.book_append_sheet(wb, wsTurnos, 'Turnos');
+        }
+        
+        // Verificar que hay al menos una hoja
+        if (wb.SheetNames.length === 0) {
+          mostrarNotificacionExportacion('No hay datos para exportar', 'warning');
+          return;
+        }
+        
+        XLSX.writeFile(wb, `Movement_Reporte_Completo_${obtenerFechaArchivo()}.xlsx`);
+        cerrarModalExportar();
+        mostrarNotificacionExportacion(`Reporte completo exportado: ${profesionales.length} profesionales, ${turnosFiltrados.length} turnos, ${clientesFiltrados.length} clientes`);
+      } catch (error) {
+        console.error('Error exportando todo:', error);
+        mostrarNotificacionExportacion('Error al exportar el reporte completo', 'error');
+      }
+    }
+    // Funciones auxiliares para fechas
+    function obtenerFechaArchivo() {
+      const ahora = new Date();
+      const dia = String(ahora.getDate()).padStart(2, '0');
+      const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+      const anio = ahora.getFullYear();
+      return `${dia}-${mes}-${anio}`;
+    }
+
+    function formatearFechaHora(timestamp) {
+      try {
+        let fecha;
+        if (timestamp?.toDate) {
+          fecha = timestamp.toDate();
+        } else if (timestamp?.seconds) {
+          fecha = new Date(timestamp.seconds * 1000);
+        } else if (typeof timestamp === 'string') {
+          fecha = new Date(timestamp);
+        } else {
+          return '';
+        }
+        
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        const anio = fecha.getFullYear();
+        const hora = String(fecha.getHours()).padStart(2, '0');
+        const min = String(fecha.getMinutes()).padStart(2, '0');
+        
+        return `${dia}/${mes}/${anio} ${hora}:${min}`;
+      } catch {
+        return '';
+      }
+    }
+
+    window.switchTab = switchTab;
+    window.logout = logout;
+    window.cambiarTipoProfesional = cambiarTipoProfesional;
+    window.toggleDia = toggleDia;
+    window.toggleSoloWhatsApp = toggleSoloWhatsApp;
+    window.agregarHorario = agregarHorario;
+    window.eliminarHorario = eliminarHorario;
+    window.selectIcon = selectIcon;
+    window.agregarExcepcion = agregarExcepcion;
+    window.eliminarExcepcion = eliminarExcepcion;
+    window.editarProfesional = editarProfesional;
+    window.cancelarEdicion = cancelarEdicion;
+    window.eliminarProfesional = eliminarProfesional;
+    window.toggleDiaRapido = toggleDiaRapido;
+    window.toggleHorarioRapido = toggleHorarioRapido;
+    window.agregarHoraPersonalizada = agregarHoraPersonalizada;
+    window.aplicarAsignacionRapida = aplicarAsignacionRapida;
+    window.formatearFecha = formatearFecha;
+    window.agregarTurnoEspecifico = agregarTurnoEspecifico;
+    window.eliminarTurnoEspecifico = eliminarTurnoEspecifico;
+    window.eliminarFechaEspecifica = eliminarFechaEspecifica;
+    window.toggleHorarioRapidoTurno = toggleHorarioRapidoTurno;
+    window.agregarHoraPersonalizadaTurno = agregarHoraPersonalizadaTurno;
+    window.aplicarHorariosRapidosTurno = aplicarHorariosRapidosTurno;
+    window.abrirModalExportar = abrirModalExportar;
+    window.cerrarModalExportar = cerrarModalExportar;
+    window.exportarProfesionales = exportarProfesionales;
+    window.exportarClientes = exportarClientes;
+    window.exportarTurnos = exportarTurnos;
+    window.exportarTodo = exportarTodo;
+    window.abrirModalGestorAdmins = abrirModalGestorAdmins;
+    window.cerrarModalGestorAdmins = cerrarModalGestorAdmins;
+    window.agregarAdmin = agregarAdmin;
+    window.eliminarAdmin = eliminarAdmin;
+    window.cargarAdmins = cargarAdmins;
+    window.actualizarListaAdmins = actualizarListaAdmins;
+    window.toggleMenuAcciones = toggleMenuAcciones;
+    window.cerrarMenuAcciones = cerrarMenuAcciones;
+  </script>
+</body>
+</html>

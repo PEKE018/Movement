@@ -1,0 +1,68 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Profesionales: lectura pública, escritura solo por admin autenticado
+    match /profesionales/{profesionalId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Administradores: solo lectura y escritura por admins autenticados
+    match /administradores/{adminId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Turnos: proteger escrituras y validar campos para reducir spam/abuso
+    match /turnos/{turnoId} {
+      // Lectura pública para mostrar horarios disponibles
+      allow read: if true;
+
+      // Crear desde frontend público si cumple validaciones estrictas
+      allow create: if validTurno(request.resource.data);
+
+      // Actualizar: permitir cancelación pública si solo cambia estado a 'cancelado'
+      allow update: if request.auth != null 
+        || (validCancelacion(resource.data, request.resource.data));
+      
+      // Eliminar solo admin autenticado
+      allow delete: if request.auth != null;
+    }
+
+    // Función auxiliar para validar schema básico de un turno
+    function validTurno(data) {
+      return data.profesionalId is string
+        && data.fecha is string
+        && data.hora is string
+        && data.nombreCliente is string
+        && data.telefonoCliente is string
+        && data.documento is string
+        && data.fecha.size() == 10  // Formato YYYY-MM-DD
+        && data.hora.size() == 5    // Formato HH:MM
+        && data.nombreCliente.size() >= 3
+        && data.nombreCliente.size() <= 100
+        && data.telefonoCliente.size() >= 10
+        && data.telefonoCliente.size() <= 20
+        && data.documento.size() >= 7
+        && data.documento.size() <= 20
+        && data.estado == 'confirmado'
+        && data.timestampReserva is timestamp
+        && (!data.keys().hasAny(['email']) || data.email is string || data.email == null);
+    }
+    
+    // Función auxiliar para validar una cancelación pública
+    function validCancelacion(before, after) {
+      return before.estado == 'confirmado'
+        && after.estado == 'cancelado'
+        && after.profesionalId == before.profesionalId
+        && after.fecha == before.fecha
+        && after.hora == before.hora
+        && after.nombreCliente == before.nombreCliente
+        && after.telefonoCliente == before.telefonoCliente
+        && after.documento == before.documento
+        && (!before.keys().hasAny(['email']) || after.email == before.email)
+        && after.timestampReserva == before.timestampReserva;
+    }
+  }
+}
